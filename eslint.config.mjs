@@ -5,7 +5,7 @@ const eslintConfig = [
   ...nextVitals,
   ...nextTs,
   {
-    ignores: ['.next/**', 'out/**', 'src-tauri/**', 'cli/**', 'public/coi-serviceworker.js', 'next-env.d.ts'],
+    ignores: ['.next/**', 'out/**', 'src-tauri/**', 'cli/**', 'public/coi-serviceworker.js', 'public/ort/**', 'next-env.d.ts'],
   },
 ];
 

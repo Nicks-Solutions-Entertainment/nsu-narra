@@ -1,0 +1,5 @@
+allowBuilds:
+  protobufjs: false
+  unrs-resolver: false
+minimumReleaseAgeExclude:
+  - '@tauri-apps/api@2.12.3'

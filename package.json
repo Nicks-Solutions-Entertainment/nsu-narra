@@ -5,8 +5,8 @@
   "description": "Narração de texto em PT-BR com vozes Piper, 100% local (PWA + desktop Tauri).",
   "license": "GPL-3.0-or-later",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "node scripts/copy-ort.mjs && next dev",
+    "build": "node scripts/copy-ort.mjs && next build",
     "start": "npx serve out",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

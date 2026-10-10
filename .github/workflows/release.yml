@@ -1,6 +1,8 @@
 name: Release desktop
 
-# Dispara ao criar uma tag de versão, ex.: git tag v0.1.0 && git push --tags
+# Só roda quando uma tag de versão chega ao GitHub (nunca em pushes comuns):
+#   git tag v0.2.0 && git push origin v0.2.0      (tag nova)
+#   git push --follow-tags                         (commit + tag juntos)
 on:
   push:
     tags: ['v*']

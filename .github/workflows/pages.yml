@@ -1,8 +1,13 @@
 name: Deploy Pages
 
+# Só publica quando uma tag de versão chega ao GitHub:
+#   git tag v0.2.0 && git push origin v0.2.0      (tag nova)
+#   git push --follow-tags                         (commit + tag juntos)
+# Pushes comuns na main NÃO publicam. `workflow_dispatch` permite rodar
+# manualmente pela aba Actions.
 on:
   push:
-    branches: [main]
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:

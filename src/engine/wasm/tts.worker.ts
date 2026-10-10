@@ -1,11 +1,13 @@
 /// <reference lib="webworker" />
-import { TtsSession } from '@mintplex-labs/piper-tts-web';
+import { TtsSession, WASM_BASE } from '@mintplex-labs/piper-tts-web';
 import { splitSentences } from '../chunk';
 import { AbortError } from '../types';
 import { concatWav } from '../wav';
+import { ORT_BASE_URL } from './ort-paths';
+import { setNextVocabulary } from './phoneme-guard';
 import type { WorkerRequest, WorkerResponse } from './protocol';
 import { getCatalog } from './voice-catalog';
-import { downloadVoice, listInstalled, removeVoice } from './voice-store';
+import { downloadVoice, listInstalled, readVoiceConfig, removeVoice } from './voice-store';
 
 /**
  * Web Worker que executa todo o trabalho pesado do motor WASM:
@@ -19,6 +21,16 @@ declare const self: DedicatedWorkerGlobalScope;
 
 /** Tamanho máximo de trecho enviado ao modelo por vez. */
 const MAX_CHUNK_LEN = 300;
+
+/**
+ * Onde buscar os binários WASM: onnxruntime servido pelo próprio app
+ * (`public/ort/`, mesma versão do JS) e piper-phonemize do CDN padrão da lib.
+ */
+const WASM_PATHS = {
+  onnxWasm: ORT_BASE_URL,
+  piperData: `${WASM_BASE}.data`,
+  piperWasm: `${WASM_BASE}.wasm`,
+};
 
 /** Controladores de cancelamento por id de requisição. */
 const controllers = new Map<number, AbortController>();
@@ -34,14 +46,20 @@ const post = (msg: WorkerResponse, transfer: Transferable[] = []) => self.postMe
  * Desempenho: a sessão é reutilizada entre gerações da mesma voz, então só a
  * primeira geração paga o custo de carregar o runtime e o modelo.
  *
- * Contorno: `TtsSession` é um singleton que NÃO recarrega o modelo quando
- * `voiceId` muda; por isso zeramos `_instance` ao trocar de voz.
+ * Contornos da biblioteca:
+ *  - `TtsSession` é um singleton que NÃO recarrega o modelo quando `voiceId`
+ *    muda; por isso zeramos `_instance` ao trocar de voz.
+ *  - Ela ignora a tabela de fonemas da voz; registramos o vocabulário do
+ *    modelo para o filtro de `phoneme-guard.ts` (vozes antigas como Edresson).
  */
 function getSession(voiceId: string): Promise<TtsSession> {
   if (session?.voiceId === voiceId) return session.ready;
 
   TtsSession._instance = null;
-  const ready = TtsSession.create({ voiceId: voiceId as TtsSession['voiceId'] });
+  const ready = readVoiceConfig<Parameters<typeof setNextVocabulary>[0]>(voiceId).then((config) => {
+    setNextVocabulary(config);
+    return TtsSession.create({ voiceId: voiceId as TtsSession['voiceId'], wasmPaths: WASM_PATHS });
+  });
   session = { voiceId, ready };
   ready.catch(() => {
     if (session?.ready === ready) session = null; // permite nova tentativa

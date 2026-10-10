@@ -4,6 +4,9 @@
 # build Next.js
 /.next/
 /out/
+
+# runtime do onnxruntime copiado de node_modules (scripts/copy-ort.mjs)
+/public/ort/
 next-env.d.ts
 *.tsbuildinfo
 

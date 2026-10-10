@@ -100,6 +100,21 @@ async function streamToFile(
   }
 }
 
+/**
+ * Lê a configuração (`.onnx.json`) de uma voz instalada.
+ * Retorna `null` se a voz não estiver no OPFS.
+ */
+export async function readVoiceConfig<T = unknown>(voiceId: string): Promise<T | null> {
+  const { config } = voiceUrls(voiceId, HF_BASE);
+  try {
+    const dir = await storeDir();
+    const file = await (await dir.getFileHandle(fileName(config))).getFile();
+    return JSON.parse(await file.text()) as T;
+  } catch {
+    return null;
+  }
+}
+
 /** Remove os arquivos de uma voz. Ignora arquivos que já não existem. */
 export async function removeVoice(voiceId: string): Promise<void> {
   const { model, config } = voiceUrls(voiceId, HF_BASE);
