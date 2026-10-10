@@ -16,6 +16,11 @@ pub fn voices_dir(app: &AppHandle) -> AppResult<PathBuf> {
     Ok(dir)
 }
 
+/// Cópia local do índice oficial de vozes (para listar offline).
+pub fn index_cache_path(app: &AppHandle) -> AppResult<PathBuf> {
+    Ok(app.path().app_data_dir()?.join("catalog").join("voices.json"))
+}
+
 pub fn model_path(dir: &Path, id: &str) -> PathBuf {
     dir.join(format!("{id}.onnx"))
 }
@@ -44,10 +49,11 @@ pub fn installed_ids(dir: &Path) -> AppResult<HashSet<String>> {
 }
 
 /// Garante que o id é um nome de arquivo seguro (evita path traversal).
+/// Aceita letras Unicode porque há ids oficiais como `pt_PT-tugão-medium`.
 pub fn validate_voice_id(id: &str) -> AppResult<()> {
     let ok = !id.is_empty()
         && id.len() <= 128
-        && id.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-');
+        && id.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-');
     if ok {
         Ok(())
     } else {
@@ -74,6 +80,8 @@ mod tests {
     #[test]
     fn valida_ids() {
         assert!(validate_voice_id("pt_BR-faber-medium").is_ok());
+        assert!(validate_voice_id("pt_PT-tugão-medium").is_ok());
+        assert!(validate_voice_id("a/b").is_err());
         assert!(validate_voice_id("../etc/passwd").is_err());
         assert!(validate_voice_id("").is_err());
     }

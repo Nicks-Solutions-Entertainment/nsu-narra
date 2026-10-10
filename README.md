@@ -31,22 +31,26 @@ Uma interface (`TtsEngine`), dois motores, escolhidos em tempo de execução por
 ```
 src/
 ├─ app/                    rotas (App Router): layout.tsx, page.tsx (rota "/")
-├─ features/narrator/      NarratorScreen: container que liga hooks a componentes
-├─ components/             apresentação pura (só props): VoicePicker, TextInput,
-│                          GenerateControls, AudioPlayer, ProgressBar, Alert
-├─ hooks/                  estado e lógica de UI: useEngine, useVoices,
-│                          useSynthesis, useDraft
-├─ lib/                    utilitários puros (formatação, localStorage)
+├─ features/narrator/      NarratorScreen: container (layout de chat) que liga
+│                          hooks a componentes
+├─ components/             apresentação pura (só props): Composer, VoiceControls,
+│                          VoiceNotice, NarrationList/Item, Select, Toggle, Icon,
+│                          ProgressBar, Alert
+├─ hooks/                  estado e lógica de UI: useEngine, useVoices (idioma +
+│                          voz), useNarrations (histórico), useDraft, usePreference
+├─ lib/                    utilitários puros (formatação, idiomas, localStorage)
 └─ engine/
    ├─ types.ts             contrato TtsEngine
    ├─ index.ts             createEngine(): Tauri ou WASM
+   ├─ catalog/             catálogo oficial (rhasspy) + community-voices.json
+   │                       (fonte única, também lida pelo Rust)
    ├─ chunk.ts / wav.ts    divisão de texto e junção de WAVs
    ├─ tauri-engine.ts      invoke() → Rust
    └─ wasm/
       ├─ wasm-engine.ts    cliente RPC na thread da UI
       ├─ tts.worker.ts     inferência ONNX num Web Worker
       ├─ protocol.ts       mensagens UI ↔ worker
-      ├─ voice-catalog.ts  catálogo pt-BR (memoizado)
+      ├─ voice-catalog.ts  catálogo + cache offline (memoizado)
       └─ voice-store.ts    modelos no OPFS (download em streaming)
 
 src-tauri/src/
@@ -58,6 +62,12 @@ src-tauri/src/
 ├─ models.rs / error.rs    tipos para o front e erros serializáveis
 cli/                       Fase 2: CLI em Rust só com std
 ```
+
+## Vozes
+
+O catálogo junta o `voices.json` oficial do [rhasspy/piper-voices](https://huggingface.co/rhasspy/piper-voices) (todos os idiomas) com as vozes da comunidade em [community-voices.json](src/engine/catalog/community-voices.json). O índice oficial fica salvo localmente para listar vozes offline.
+
+Para adicionar uma voz da comunidade, ela precisa: estar num host com CORS (o Hugging Face serve), usar `phoneme_type: espeak`, ter `.onnx` + config acessíveis e uma licença que permita redistribuir o modelo sem modificação. Preencha `license`, `commercialUse` e `attribution` — a UI mostra esses dados.
 
 ## Decisões de desempenho
 

@@ -1,6 +1,6 @@
 /**
  * Acesso seguro ao `localStorage` para preferências por usuário
- * (voz escolhida, rascunho do texto).
+ * (voz escolhida, rascunho do texto, "enviar com Enter").
  *
  * Nunca lança: em aba anônima, armazenamento bloqueado ou SSR, apenas
  * retorna o valor padrão / ignora a escrita.
@@ -25,5 +25,7 @@ export function writePref(key: string, value: string | null): void {
 /** Chaves usadas pelo app, centralizadas para evitar colisões. */
 export const PREF_KEYS = {
   voice: 'narra:voice',
+  language: 'narra:language',
   draft: 'narra:draft',
+  enterToSend: 'narra:enter-to-send',
 } as const;

@@ -1,0 +1,112 @@
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.language {
+  max-width: 220px;
+}
+
+.voice {
+  max-width: 260px;
+}
+
+.loading {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  padding: 0 6px;
+}
+
+.downloadChip,
+.progressChip,
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.downloadChip {
+  padding: 0 12px;
+  color: var(--accent-fg);
+  background: var(--accent);
+  border: 0;
+}
+
+.downloadChip:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.downloadChip:disabled,
+.iconButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Barra de progresso dentro do próprio chip; animada via transform (GPU). */
+.progressChip {
+  position: relative;
+  overflow: hidden;
+  padding: 0 10px 0 12px;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.progressFill {
+  position: absolute;
+  inset: 0;
+  background: var(--accent-soft);
+  transform-origin: left center;
+  transform: scaleX(var(--progress, 0));
+  transition: transform 160ms ease-out;
+}
+
+.chipText {
+  position: relative;
+  font-variant-numeric: tabular-nums;
+  min-width: 4ch;
+  text-align: right;
+}
+
+.progressChip svg {
+  position: relative;
+}
+
+.iconButton {
+  width: 34px;
+  padding: 0;
+  color: var(--text-muted);
+  background: none;
+  border: 0;
+}
+
+.iconButton:hover:not(:disabled) {
+  color: var(--danger-fg);
+  background: var(--surface-2);
+}
+
+.downloadChip:focus-visible,
+.progressChip:focus-visible,
+.iconButton:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+@media (max-width: 520px) {
+  .language,
+  .voice {
+    max-width: 100%;
+    flex: 1 1 140px;
+  }
+}

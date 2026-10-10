@@ -1,0 +1,15 @@
+.notice {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.notice a {
+  color: inherit;
+}
+
+.warn {
+  font-weight: 600;
+  color: var(--warn-fg);
+}

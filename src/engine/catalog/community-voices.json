@@ -1,0 +1,75 @@
+{
+  "$comment": "Vozes Piper da comunidade (fora do rhasspy/piper-voices). Fonte única para o motor web (TS) e o desktop (Rust, via include_str!). Antes de adicionar: o repositório precisa servir .onnx + config por HTTPS com CORS (Hugging Face serve), usar phoneme_type espeak e declarar licença que permita redistribuir o modelo sem modificação. Pesquisa em 2026-10-10.",
+  "voices": [
+    {
+      "id": "pt_BR-razo-medium",
+      "language": "pt_BR",
+      "name": "razo",
+      "quality": "medium",
+      "gender": "male",
+      "sizeBytes": 63516050,
+      "modelUrl": "https://huggingface.co/Lucasllfs/Razo-piper-voice/resolve/main/pt-BR-razo-medium.onnx",
+      "configUrl": "https://huggingface.co/Lucasllfs/Razo-piper-voice/resolve/main/config.json",
+      "license": "MIT",
+      "commercialUse": true,
+      "attribution": "Lucasllfs / Forjal",
+      "homepage": "https://huggingface.co/Lucasllfs/Razo-piper-voice"
+    },
+    {
+      "id": "pt_BR-dii-medium",
+      "language": "pt_BR",
+      "name": "dii",
+      "quality": "medium",
+      "gender": "female",
+      "sizeBytes": 63511038,
+      "modelUrl": "https://huggingface.co/OpenVoiceOS/pipertts_pt-BR_dii/resolve/main/dii_pt-BR.onnx",
+      "configUrl": "https://huggingface.co/OpenVoiceOS/pipertts_pt-BR_dii/resolve/main/dii_pt-BR.onnx.json",
+      "license": "CC BY-NC-ND 4.0",
+      "commercialUse": false,
+      "attribution": "TigreGotico Lda (OpenVoiceOS)",
+      "homepage": "https://huggingface.co/OpenVoiceOS/pipertts_pt-BR_dii"
+    },
+    {
+      "id": "pt_BR-miro-medium",
+      "language": "pt_BR",
+      "name": "miro",
+      "quality": "medium",
+      "gender": "male",
+      "sizeBytes": 63511038,
+      "modelUrl": "https://huggingface.co/OpenVoiceOS/pipertts_pt-BR_miro/resolve/main/miro_pt-BR.onnx",
+      "configUrl": "https://huggingface.co/OpenVoiceOS/pipertts_pt-BR_miro/resolve/main/miro_pt-BR.onnx.json",
+      "license": "CC BY-NC-ND 4.0",
+      "commercialUse": false,
+      "attribution": "TigreGotico Lda (OpenVoiceOS)",
+      "homepage": "https://huggingface.co/OpenVoiceOS/pipertts_pt-BR_miro"
+    },
+    {
+      "id": "pt_PT-dii-medium",
+      "language": "pt_PT",
+      "name": "dii",
+      "quality": "medium",
+      "gender": "female",
+      "sizeBytes": 63511038,
+      "modelUrl": "https://huggingface.co/OpenVoiceOS/pipertts_pt-PT_dii/resolve/main/dii_pt-PT.onnx",
+      "configUrl": "https://huggingface.co/OpenVoiceOS/pipertts_pt-PT_dii/resolve/main/dii_pt-PT.onnx.json",
+      "license": "CC BY-NC-ND 4.0",
+      "commercialUse": false,
+      "attribution": "TigreGotico Lda (OpenVoiceOS)",
+      "homepage": "https://huggingface.co/OpenVoiceOS/pipertts_pt-PT_dii"
+    },
+    {
+      "id": "pt_PT-miro-medium",
+      "language": "pt_PT",
+      "name": "miro",
+      "quality": "medium",
+      "gender": "male",
+      "sizeBytes": 63511038,
+      "modelUrl": "https://huggingface.co/OpenVoiceOS/pipertts_pt-PT_miro/resolve/main/miro_pt-PT.onnx",
+      "configUrl": "https://huggingface.co/OpenVoiceOS/pipertts_pt-PT_miro/resolve/main/miro_pt-PT.onnx.json",
+      "license": "CC BY-NC-ND 4.0",
+      "commercialUse": false,
+      "attribution": "TigreGotico Lda (OpenVoiceOS)",
+      "homepage": "https://huggingface.co/OpenVoiceOS/pipertts_pt-PT_miro"
+    }
+  ]
+}

@@ -1,0 +1,219 @@
+/* ---------- estado vazio ---------- */
+.empty {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 10px;
+  min-height: 100%;
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.emptyIcon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.emptyTitle {
+  margin: 6px 0 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.emptyText {
+  max-width: 420px;
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ---------- histórico ---------- */
+.thread {
+  padding: 8px 0 24px;
+}
+
+.threadHeader {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 4px;
+}
+
+.clearButton {
+  font: inherit;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  background: none;
+  border: 0;
+  padding: 4px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.clearButton:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 28px;
+}
+
+.item {
+  display: grid;
+  gap: 12px;
+  /* itens fora da tela não são renderizados até aparecerem (histórico longo) */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 220px;
+}
+
+.userRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.userBubble {
+  max-width: min(85%, 560px);
+  margin: 0;
+  padding: 10px 16px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+  background: var(--surface-2);
+  border-radius: 20px;
+  /* textos longos ficam recolhidos; o usuário rola dentro da bolha */
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.reply {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.replyBody {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding-top: 5px;
+}
+
+.replyHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.voice {
+  font-weight: 600;
+}
+
+.time {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.removeButton {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin-left: auto;
+  color: var(--text-muted);
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.removeButton:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.running {
+  display: grid;
+  gap: 8px;
+  max-width: 420px;
+}
+
+.statusText {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.error {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  color: var(--danger-fg);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  border-radius: 10px;
+}
+
+.player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.audio {
+  flex: 1 1 260px;
+  min-width: 0;
+  max-width: 480px;
+  height: 40px;
+}
+
+.downloadLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.downloadLink:hover {
+  background: var(--surface-2);
+}
+
+.size {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.removeButton:focus-visible,
+.clearButton:focus-visible,
+.downloadLink:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}

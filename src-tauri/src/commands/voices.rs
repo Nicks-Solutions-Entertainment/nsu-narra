@@ -11,23 +11,16 @@ use crate::{
 
 /// `invoke('list_voices')` → `VoiceInfo[]`
 ///
-/// Lista as vozes pt-BR do catálogo, marcando as instaladas.
-/// Catálogo memoizado + uma única leitura de diretório por chamada.
+/// Lista todas as vozes (oficiais + comunidade, todos os idiomas), marcando as
+/// instaladas. Catálogo memoizado + uma única leitura de diretório por chamada.
 #[tauri::command]
 pub async fn list_voices(app: AppHandle, state: State<'_, AppState>) -> AppResult<Vec<VoiceInfo>> {
-    let catalog = state.catalog().await;
+    let catalog = state.catalog(&storage::index_cache_path(&app)?).await?;
     let installed = storage::installed_ids(&storage::voices_dir(&app)?)?;
 
     Ok(catalog
         .iter()
-        .map(|v| VoiceInfo {
-            id: v.id.clone(),
-            language: v.language.clone(),
-            name: v.name.clone(),
-            quality: v.quality.clone(),
-            size_bytes: v.size_bytes,
-            installed: installed.contains(&v.id),
-        })
+        .map(|v| VoiceInfo::from_catalog(v, installed.contains(&v.id)))
         .collect())
 }
 
@@ -43,7 +36,7 @@ pub async fn download_voice(
     on_progress: Channel<DownloadProgress>,
 ) -> AppResult<()> {
     storage::validate_voice_id(&voice_id)?;
-    let voice = state.find_voice(&voice_id).await?;
+    let voice = state.find_voice(&storage::index_cache_path(&app)?, &voice_id).await?;
     let dir = storage::voices_dir(&app)?;
     let cancel = state.begin_download(&voice_id)?;
 
@@ -51,7 +44,7 @@ pub async fn download_voice(
         let mut last_pct = u64::MAX;
         downloader::download_to(
             &state.http,
-            &voice.model_url(),
+            &voice.model_url,
             &storage::model_path(&dir, &voice_id),
             &cancel,
             |loaded, total| {
@@ -67,7 +60,7 @@ pub async fn download_voice(
         // Config por último: a voz só conta como instalada com os dois arquivos.
         downloader::download_to(
             &state.http,
-            &voice.config_url(),
+            &voice.config_url,
             &storage::config_path(&dir, &voice_id),
             &cancel,
             |_, _| {},

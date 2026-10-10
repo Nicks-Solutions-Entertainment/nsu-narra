@@ -1,119 +1,123 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { Alert } from '@/components/Alert/Alert';
-import { AudioPlayer } from '@/components/AudioPlayer/AudioPlayer';
-import { GenerateControls } from '@/components/GenerateControls/GenerateControls';
-import { TextInput } from '@/components/TextInput/TextInput';
-import { VoicePicker } from '@/components/VoicePicker/VoicePicker';
+import { Composer } from '@/components/Composer/Composer';
+import { NarrationList } from '@/components/NarrationList/NarrationList';
+import { VoiceControls } from '@/components/VoiceControls/VoiceControls';
+import { VoiceNotice } from '@/components/VoiceControls/VoiceNotice';
 import { useDraft } from '@/hooks/useDraft';
 import { useEngine } from '@/hooks/useEngine';
-import { useSynthesis } from '@/hooks/useSynthesis';
+import { useNarrations } from '@/hooks/useNarrations';
+import { useBooleanPreference } from '@/hooks/usePreference';
 import { useVoices } from '@/hooks/useVoices';
+import { formatVoiceName } from '@/lib/format';
+import { languageLabel } from '@/lib/languages';
+import { PREF_KEYS } from '@/lib/storage';
 import styles from './NarratorScreen.module.css';
 
 /** Limite de caracteres por geração (protege a memória em celulares). */
 const MAX_TEXT_LENGTH = 20_000;
 
 /**
- * Tela principal (container): liga os hooks de estado aos componentes de
- * apresentação. É o único lugar da UI que conhece o motor.
+ * Tela principal (container), no formato de chat:
+ *  - topo: marca e motor em uso;
+ *  - meio (rolável): histórico de narrações — cada envio vira um item novo e
+ *    os anteriores continuam disponíveis;
+ *  - rodapé fixo: composer com idioma, voz e "enviar com Enter".
  *
- * Fluxo: escolher voz → digitar texto → gerar → ouvir/baixar.
+ * É o único lugar da UI que conhece o motor; os componentes só recebem props.
  */
 export function NarratorScreen() {
   const { engine, error: engineError } = useEngine();
   const voices = useVoices(engine);
-  const synthesis = useSynthesis(engine);
+  const narrations = useNarrations(engine);
   const [text, setText] = useDraft();
+  const [enterToSend, setEnterToSend] = useBooleanPreference(PREF_KEYS.enterToSend, true);
 
-  const running = synthesis.status === 'running';
-  const selectedVoice = useMemo(
-    () => voices.voices.find((v) => v.id === voices.selectedId) ?? null,
-    [voices.voices, voices.selectedId],
-  );
+  const { selected, downloads } = voices;
+  const downloadPct = selected ? downloads[selected.id] : undefined;
 
   const blockedReason = !engine
     ? 'Carregando o motor de voz…'
-    : !selectedVoice?.installed
-      ? 'Baixe e selecione uma voz.'
-      : !text.trim()
-        ? 'Digite algum texto.'
-        : null;
+    : !selected
+      ? 'Escolha uma voz.'
+      : downloadPct !== undefined
+        ? 'Aguarde o download da voz terminar.'
+        : !selected.installed
+          ? 'Baixe a voz selecionada para gerar o áudio.'
+          : null;
 
-  const { generate } = synthesis;
-  const handleGenerate = useCallback(() => {
-    if (selectedVoice) void generate(text, selectedVoice.id);
-  }, [generate, text, selectedVoice]);
+  const { generate } = narrations;
+  const handleSubmit = useCallback(() => {
+    const content = text.trim();
+    if (!selected || !content) return;
+    generate(content, selected.id, `${formatVoiceName(selected.name)} · ${languageLabel(selected.language)}`);
+    setText('');
+  }, [generate, selected, text, setText]);
 
   const { download, remove } = voices;
   const handleDownload = useCallback((id: string) => void download(id), [download]);
-  const handleRemove = useCallback((id: string) => void remove(id), [remove]);
+  const handleRemoveVoice = useCallback((id: string) => void remove(id), [remove]);
 
   return (
-    <main className={styles.main}>
+    <div className={styles.shell}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Narra</h1>
-        <p className={styles.subtitle}>
-          Transforme texto em narração em português. Tudo roda no seu aparelho — nada é enviado para servidores.
-        </p>
+        <span className={styles.brand}>Narra</span>
+        {engine && <span className={styles.engine}>motor {engine.kind}</span>}
       </header>
 
-      {engineError && <Alert>Não foi possível iniciar o motor de voz: {engineError}</Alert>}
-      {voices.error && (
-        <Alert
-          action={
-            <button type="button" className="btn btn-ghost" onClick={voices.reload}>
-              Tentar de novo
-            </button>
-          }
-        >
-          {voices.error}
-        </Alert>
-      )}
+      <main className={styles.scroll}>
+        <div className={styles.column}>
+          <NarrationList items={narrations.items} onRemove={narrations.remove} onClear={narrations.clear} />
+        </div>
+      </main>
 
-      <section className={styles.card}>
-        <VoicePicker
-          voices={voices.voices}
-          selectedId={voices.selectedId}
-          downloads={voices.downloads}
-          loading={voices.loading}
-          disabled={running}
-          onSelect={voices.select}
-          onDownload={handleDownload}
-          onCancelDownload={voices.cancelDownload}
-          onRemove={handleRemove}
-        />
-      </section>
+      <footer className={styles.dock}>
+        <div className={styles.column}>
+          {engineError && <Alert>Não foi possível iniciar o motor de voz: {engineError}</Alert>}
+          {voices.error && (
+            <Alert
+              action={
+                <button type="button" className="btn btn-ghost" onClick={voices.reload}>
+                  Tentar de novo
+                </button>
+              }
+            >
+              {voices.error}
+            </Alert>
+          )}
 
-      <section className={styles.card}>
-        <TextInput value={text} onChange={setText} disabled={running} maxLength={MAX_TEXT_LENGTH} />
-        <GenerateControls
-          running={running}
-          progress={synthesis.progress}
-          blockedReason={blockedReason}
-          onGenerate={handleGenerate}
-          onCancel={synthesis.cancel}
-        />
-        {synthesis.error && <Alert>{synthesis.error}</Alert>}
-      </section>
-
-      {synthesis.audio && (
-        <AudioPlayer
-          src={synthesis.audio.url}
-          voiceId={synthesis.audio.voiceId}
-          sizeBytes={synthesis.audio.sizeBytes}
-        />
-      )}
-
-      <footer className={styles.footer}>
-        Vozes{' '}
-        <a href="https://huggingface.co/rhasspy/piper-voices" target="_blank" rel="noreferrer">
-          Piper
-        </a>
-        . Confira a licença de cada voz antes de uso comercial.
-        {engine && <span className={styles.engine}> · motor: {engine.kind}</span>}
+          <Composer
+            value={text}
+            onChange={setText}
+            onSubmit={handleSubmit}
+            onStop={narrations.cancel}
+            running={narrations.running}
+            blockedReason={blockedReason}
+            enterToSend={enterToSend}
+            onEnterToSendChange={setEnterToSend}
+            maxLength={MAX_TEXT_LENGTH}
+            toolbar={
+              <VoiceControls
+                languages={voices.languages}
+                language={voices.language}
+                voices={voices.voices}
+                selected={selected}
+                downloadPct={downloadPct}
+                loading={voices.loading}
+                disabled={narrations.running}
+                onLanguageChange={voices.selectLanguage}
+                onVoiceChange={voices.selectVoice}
+                onDownload={handleDownload}
+                onCancelDownload={voices.cancelDownload}
+                onRemove={handleRemoveVoice}
+              />
+            }
+            footer={<VoiceNotice voice={selected} />}
+          />
+        </div>
       </footer>
-    </main>
+    </div>
   );
 }

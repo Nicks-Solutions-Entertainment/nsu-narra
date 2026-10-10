@@ -1,13 +1,13 @@
 /// <reference lib="webworker" />
-import { TtsSession, WASM_BASE } from '@mintplex-labs/piper-tts-web';
+import { PATH_MAP, TtsSession, WASM_BASE } from '@mintplex-labs/piper-tts-web';
 import { splitSentences } from '../chunk';
 import { AbortError } from '../types';
 import { concatWav } from '../wav';
 import { ORT_BASE_URL } from './ort-paths';
 import { setNextVocabulary } from './phoneme-guard';
 import type { WorkerRequest, WorkerResponse } from './protocol';
-import { getCatalog } from './voice-catalog';
-import { downloadVoice, listInstalled, readVoiceConfig, removeVoice } from './voice-store';
+import { findVoice, getCatalog } from './voice-catalog';
+import { downloadVoice, listInstalled, modelFile, readVoiceConfig, removeVoice } from './voice-store';
 
 /**
  * Web Worker que executa todo o trabalho pesado do motor WASM:
@@ -51,13 +51,20 @@ const post = (msg: WorkerResponse, transfer: Transferable[] = []) => self.postMe
  *    muda; por isso zeramos `_instance` ao trocar de voz.
  *  - Ela ignora a tabela de fonemas da voz; registramos o vocabulário do
  *    modelo para o filtro de `phoneme-guard.ts` (vozes antigas como Edresson).
+ *  - Ela só conhece as vozes do seu `PATH_MAP` e busca o modelo no OPFS pelo
+ *    último segmento do caminho. Registrando `<id>.onnx` para a voz, ela lê
+ *    os arquivos que nós baixamos — inclusive vozes novas e da comunidade.
  */
 function getSession(voiceId: string): Promise<TtsSession> {
   if (session?.voiceId === voiceId) return session.ready;
 
   TtsSession._instance = null;
   const ready = readVoiceConfig<Parameters<typeof setNextVocabulary>[0]>(voiceId).then((config) => {
+    // Sem a voz no OPFS a lib tentaria baixar de outro repositório e gravaria
+    // a página de erro como modelo; por isso exigimos a instalação antes.
+    if (!config) throw new Error('Esta voz não está instalada. Baixe-a antes de gerar.');
     setNextVocabulary(config);
+    (PATH_MAP as Record<string, string>)[voiceId] = `local/${modelFile(voiceId)}`;
     return TtsSession.create({ voiceId: voiceId as TtsSession['voiceId'], wasmPaths: WASM_PATHS });
   });
   session = { voiceId, ready };
@@ -67,10 +74,18 @@ function getSession(voiceId: string): Promise<TtsSession> {
   return ready;
 }
 
-/** Lista o catálogo do idioma alvo com o estado de instalação atual. */
+/**
+ * Lista o catálogo completo com o estado de instalação atual.
+ * As URLs de download ficam no worker (a UI não precisa delas).
+ */
 async function handleListVoices() {
   const [catalog, installed] = await Promise.all([getCatalog(), listInstalled()]);
-  return catalog.map((v) => ({ ...v, installed: installed.has(v.id) }));
+  return catalog.map((entry) => {
+    const { modelUrl, configUrl, ...voice } = entry;
+    void modelUrl;
+    void configUrl;
+    return { ...voice, installed: installed.has(voice.id) };
+  });
 }
 
 /**
@@ -79,9 +94,10 @@ async function handleListVoices() {
  * milhares de `postMessage` (e re-renderizações) por download.
  */
 async function handleDownload(id: number, voiceId: string, signal: AbortSignal) {
+  const voice = await findVoice(voiceId);
   let lastPct = -1;
   await downloadVoice(
-    voiceId,
+    voice,
     (loaded, total) => {
       const pct = total ? Math.floor((loaded / total) * 100) : 0;
       if (pct === lastPct) return;

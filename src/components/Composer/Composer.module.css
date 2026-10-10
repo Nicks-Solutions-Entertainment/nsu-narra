@@ -1,0 +1,108 @@
+.composer {
+  display: grid;
+  gap: 6px;
+}
+
+.box {
+  display: grid;
+  gap: 4px;
+  padding: 10px 10px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+  transition: border-color 120ms;
+}
+
+.box:focus-within {
+  border-color: var(--border-strong);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 44px;
+  max-height: 280px;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+  outline: none;
+  resize: none;
+  overflow-y: auto;
+}
+
+.textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.toolbarStart {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.toolbarEnd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.sendButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  color: var(--send-fg);
+  background: var(--send-bg);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: opacity 120ms, transform 120ms;
+}
+
+.sendButton:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.sendButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.sendButton:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 14px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.counter {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .box {
+    border-radius: 20px;
+  }
+}

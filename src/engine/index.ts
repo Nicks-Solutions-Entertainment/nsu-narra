@@ -1,7 +1,7 @@
 import type { TtsEngine } from './types';
 
 export type * from './types';
-export { AbortError, TARGET_LANGUAGE } from './types';
+export { AbortError } from './types';
 
 /**
  * Cria o motor adequado ao ambiente em tempo de execução.

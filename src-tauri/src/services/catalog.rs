@@ -1,16 +1,19 @@
-//! Catálogo de vozes do repositório `rhasspy/piper-voices` no Hugging Face.
+//! Catálogo de vozes: oficial (`rhasspy/piper-voices`) + comunidade.
+//!
+//! Espelha `src/engine/catalog/index.ts`. As vozes da comunidade vêm do mesmo
+//! JSON usado pelo front (`include_str!`), então há uma única lista a manter.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 use serde::Deserialize;
 
 use crate::error::AppResult;
 
-/// Base para baixar arquivos do repositório de vozes.
-pub const HF_BASE: &str = "https://huggingface.co/rhasspy/piper-voices/resolve/main";
-const VOICES_JSON: &str = "https://huggingface.co/rhasspy/piper-voices/resolve/main/voices.json";
+const OFFICIAL_BASE: &str = "https://huggingface.co/rhasspy/piper-voices/resolve/main";
+const OFFICIAL_INDEX: &str = "https://huggingface.co/rhasspy/piper-voices/resolve/main/voices.json";
+const COMMUNITY_JSON: &str = include_str!("../../../src/engine/catalog/community-voices.json");
 
-/// Voz do catálogo com o caminho do modelo no repositório.
+/// Voz do catálogo com as URLs de download.
 #[derive(Debug, Clone)]
 pub struct CatalogVoice {
     pub id: String,
@@ -18,21 +21,17 @@ pub struct CatalogVoice {
     pub name: String,
     pub quality: String,
     pub size_bytes: Option<u64>,
-    /// Caminho relativo do `.onnx`, ex.: `pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx`.
-    pub model_path: String,
+    pub source: &'static str,
+    pub gender: Option<String>,
+    pub license: Option<String>,
+    pub commercial_use: Option<bool>,
+    pub attribution: Option<String>,
+    pub homepage: Option<String>,
+    pub model_url: String,
+    pub config_url: String,
 }
 
-impl CatalogVoice {
-    pub fn model_url(&self) -> String {
-        format!("{HF_BASE}/{}", self.model_path)
-    }
-
-    pub fn config_url(&self) -> String {
-        format!("{HF_BASE}/{}.json", self.model_path)
-    }
-}
-
-// Formato do voices.json (só os campos usados; o resto é ignorado pelo serde).
+// --- formato do voices.json oficial (só os campos usados) ---
 #[derive(Deserialize)]
 struct RawVoice {
     key: String,
@@ -52,45 +51,141 @@ struct RawFile {
     size_bytes: u64,
 }
 
-/// Baixa o `voices.json` e retorna as vozes do idioma `language`, ordenadas.
-pub async fn fetch(client: &reqwest::Client, language: &str) -> AppResult<Vec<CatalogVoice>> {
-    let body = client.get(VOICES_JSON).send().await?.error_for_status()?.bytes().await?;
-    let raw: HashMap<String, RawVoice> = serde_json::from_slice(&body)?;
+// --- formato de community-voices.json ---
+#[derive(Deserialize)]
+struct CommunityFile {
+    voices: Vec<CommunityVoice>,
+}
 
-    let mut voices: Vec<CatalogVoice> = raw
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CommunityVoice {
+    id: String,
+    language: String,
+    name: String,
+    quality: String,
+    gender: Option<String>,
+    size_bytes: Option<u64>,
+    model_url: String,
+    config_url: String,
+    license: Option<String>,
+    commercial_use: Option<bool>,
+    attribution: Option<String>,
+    homepage: Option<String>,
+}
+
+/// Baixa o índice oficial e devolve os bytes crus (para também salvar em cache).
+pub async fn fetch_official_index(client: &reqwest::Client) -> AppResult<Vec<u8>> {
+    Ok(client.get(OFFICIAL_INDEX).send().await?.error_for_status()?.bytes().await?.to_vec())
+}
+
+/// Monta o catálogo completo a partir do índice oficial (pode ser vazio).
+/// Oficial vence em caso de id repetido. Ordena por idioma, nome e qualidade.
+pub fn build(official_index: Option<&[u8]>) -> AppResult<Vec<CatalogVoice>> {
+    let mut by_id: HashMap<String, CatalogVoice> =
+        community().into_iter().map(|v| (v.id.clone(), v)).collect();
+
+    if let Some(bytes) = official_index {
+        for v in parse_official(bytes)? {
+            by_id.insert(v.id.clone(), v);
+        }
+    }
+
+    let mut voices: Vec<CatalogVoice> = by_id.into_values().collect();
+    voices.sort_by(|a, b| {
+        a.language
+            .cmp(&b.language)
+            .then_with(|| a.name.cmp(&b.name))
+            .then_with(|| quality_rank(&a.quality).cmp(&quality_rank(&b.quality)))
+    });
+    Ok(voices)
+}
+
+/// Lê o índice salvo na última busca bem-sucedida (uso offline).
+pub fn read_cached_index(path: &Path) -> Option<Vec<u8>> {
+    std::fs::read(path).ok()
+}
+
+pub fn write_cached_index(path: &Path, bytes: &[u8]) {
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    let _ = std::fs::write(path, bytes);
+}
+
+fn parse_official(bytes: &[u8]) -> AppResult<Vec<CatalogVoice>> {
+    let raw: HashMap<String, RawVoice> = serde_json::from_slice(bytes)?;
+    Ok(raw
         .into_values()
-        .filter(|v| v.language.code.starts_with(language))
         .filter_map(|v| {
-            let (model_path, file) = v.files.iter().find(|(path, _)| path.ends_with(".onnx"))?;
+            let (path, file) = v.files.iter().find(|(p, _)| p.ends_with(".onnx"))?;
+            let dir = path.rsplit_once('/').map_or("", |(d, _)| d);
             Some(CatalogVoice {
-                model_path: model_path.clone(),
+                model_url: format!("{OFFICIAL_BASE}/{path}"),
+                config_url: format!("{OFFICIAL_BASE}/{path}.json"),
+                homepage: Some(format!("https://huggingface.co/rhasspy/piper-voices/tree/main/{dir}")),
                 size_bytes: Some(file.size_bytes),
                 id: v.key,
                 language: v.language.code,
                 name: v.name,
                 quality: v.quality,
+                source: "official",
+                gender: None,
+                license: None,
+                commercial_use: None,
+                attribution: None,
             })
         })
-        .collect();
-
-    voices.sort_by(|a, b| a.name.cmp(&b.name).then_with(|| a.quality.cmp(&b.quality)));
-    Ok(voices)
+        .collect())
 }
 
-/// Lista mínima usada quando o catálogo remoto está indisponível (offline).
-pub fn fallback() -> Vec<CatalogVoice> {
-    [("edresson", "low"), ("faber", "medium")]
+fn community() -> Vec<CatalogVoice> {
+    let file: CommunityFile =
+        serde_json::from_str(COMMUNITY_JSON).expect("community-voices.json inválido");
+    file.voices
         .into_iter()
-        .map(|(name, quality)| {
-            let id = format!("pt_BR-{name}-{quality}");
-            CatalogVoice {
-                model_path: format!("pt/pt_BR/{name}/{quality}/{id}.onnx"),
-                id,
-                language: "pt_BR".into(),
-                name: name.into(),
-                quality: quality.into(),
-                size_bytes: None,
-            }
+        .map(|v| CatalogVoice {
+            id: v.id,
+            language: v.language,
+            name: v.name,
+            quality: v.quality,
+            size_bytes: v.size_bytes,
+            source: "community",
+            gender: v.gender,
+            license: v.license,
+            commercial_use: v.commercial_use,
+            attribution: v.attribution,
+            homepage: v.homepage,
+            model_url: v.model_url,
+            config_url: v.config_url,
         })
         .collect()
+}
+
+fn quality_rank(q: &str) -> u8 {
+    match q {
+        "x_low" => 0,
+        "low" => 1,
+        "medium" => 2,
+        "high" => 3,
+        _ => 4,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn json_da_comunidade_e_valido() {
+        let voices = community();
+        assert!(voices.iter().any(|v| v.id == "pt_BR-razo-medium"));
+        assert!(voices.iter().all(|v| v.model_url.starts_with("https://")));
+    }
+
+    #[test]
+    fn catalogo_sem_rede_tem_a_comunidade() {
+        let voices = build(None).unwrap();
+        assert_eq!(voices.len(), community().len());
+    }
 }

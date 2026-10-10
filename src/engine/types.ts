@@ -8,6 +8,9 @@
 /** Qualidade de modelo publicada no catálogo do Piper. */
 export type VoiceQuality = 'x_low' | 'low' | 'medium' | 'high';
 
+/** `official`: rhasspy/piper-voices · `community`: catalog/community-voices.json. */
+export type VoiceSource = 'official' | 'community';
+
 /** Metadados de uma voz exibidos no seletor. */
 export interface VoiceInfo {
   /** Identificador do Piper, ex.: `pt_BR-faber-medium`. */
@@ -21,6 +24,15 @@ export interface VoiceInfo {
   sizeBytes?: number;
   /** `true` se o modelo já está salvo no aparelho. */
   installed: boolean;
+  source: VoiceSource;
+  gender?: 'male' | 'female';
+  /** Licença declarada pelo autor (vozes da comunidade). */
+  license?: string;
+  /** `false` quando a licença proíbe uso comercial. */
+  commercialUse?: boolean;
+  attribution?: string;
+  /** Página do modelo (cartão com licença e detalhes). */
+  homepage?: string;
 }
 
 /** Progresso de geração: `done` de `total` trechos concluídos. */
@@ -46,7 +58,7 @@ export interface TtsEngine {
   /** Nome do motor para diagnóstico (`wasm` | `tauri`). */
   readonly kind: 'wasm' | 'tauri';
 
-  /** Lista as vozes pt-BR disponíveis, marcando as já instaladas. */
+  /** Lista todas as vozes disponíveis (todos os idiomas), marcando as instaladas. */
   listVoices(): Promise<VoiceInfo[]>;
 
   /** Baixa e persiste o modelo de uma voz. */
@@ -61,9 +73,6 @@ export interface TtsEngine {
   /** Libera recursos (workers, sessões). Opcional. */
   dispose?(): void;
 }
-
-/** Idioma alvo do app. Centralizado para facilitar suporte a outros idiomas. */
-export const TARGET_LANGUAGE = 'pt_BR';
 
 /** Erro lançado quando o usuário cancela uma operação. */
 export class AbortError extends Error {

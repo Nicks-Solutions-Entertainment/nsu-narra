@@ -1,53 +1,56 @@
-.main {
-  width: 100%;
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 32px 16px 48px;
+/* Layout de chat: topo fixo, histórico rolável, composer fixo no rodapé. */
+.shell {
   display: grid;
-  gap: 20px;
+  grid-template-rows: auto 1fr auto;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .header {
-  display: grid;
-  gap: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
 }
 
-.title {
-  margin: 0;
-  font-size: 2rem;
-  letter-spacing: -0.02em;
-}
-
-.subtitle {
-  margin: 0;
-  color: var(--text-muted);
-  line-height: 1.5;
-}
-
-.card {
-  display: grid;
-  gap: 16px;
-  padding: 18px;
-  border: 1px solid var(--border);
-  border-radius: calc(var(--radius) + 4px);
-  background: var(--surface-1);
-}
-
-.footer {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  text-align: center;
-}
-
-.footer a {
-  color: inherit;
+.brand {
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
 }
 
 .engine {
-  font-variant: small-caps;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
 }
 
-@media (max-width: 480px) {
-  .main { padding-top: 20px; }
-  .card { padding: 14px; }
+.scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.scroll > .column {
+  min-height: 100%;
+}
+
+.column {
+  width: 100%;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.dock {
+  padding: 8px 0 max(12px, env(safe-area-inset-bottom));
+  background: linear-gradient(to bottom, transparent, var(--bg) 18px);
+}
+
+.dock .column {
+  display: grid;
+  gap: 8px;
 }

@@ -2,6 +2,7 @@
 
 use std::{
     collections::HashMap,
+    path::Path,
     sync::{atomic::AtomicBool, Arc, Mutex},
 };
 
@@ -9,9 +10,6 @@ use crate::{
     error::{AppError, AppResult},
     services::catalog::{self, CatalogVoice},
 };
-
-/// Idioma alvo do app (igual a `TARGET_LANGUAGE` no front).
-pub const TARGET_LANGUAGE: &str = "pt_BR";
 
 pub struct AppState {
     /// Cliente HTTP único: reaproveita conexões TLS entre requisições.
@@ -31,33 +29,35 @@ impl AppState {
         Self { http, catalog: Default::default(), downloads: Default::default() }
     }
 
-    /// Retorna o catálogo de vozes do idioma alvo.
+    /// Retorna o catálogo completo (todos os idiomas, oficial + comunidade).
     ///
-    /// Desempenho: o `voices.json` remoto é baixado e filtrado uma única vez
-    /// por execução. Se a rede falhar, usa a lista embutida sem memoizar,
-    /// para tentar de novo na próxima chamada.
-    pub async fn catalog(&self) -> Arc<Vec<CatalogVoice>> {
+    /// Desempenho: o `voices.json` remoto é baixado uma única vez por execução
+    /// e memoizado. Ele também é salvo em `cache_path`; se a rede falhar, essa
+    /// cópia é usada (sem memoizar, para tentar a rede de novo depois).
+    pub async fn catalog(&self, cache_path: &Path) -> AppResult<Arc<Vec<CatalogVoice>>> {
         let mut guard = self.catalog.lock().await;
         if let Some(list) = guard.as_ref() {
-            return list.clone();
+            return Ok(list.clone());
         }
-        match catalog::fetch(&self.http, TARGET_LANGUAGE).await {
-            Ok(list) => {
-                let list = Arc::new(list);
+        match catalog::fetch_official_index(&self.http).await {
+            Ok(bytes) => {
+                let list = Arc::new(catalog::build(Some(&bytes))?);
+                catalog::write_cached_index(cache_path, &bytes);
                 *guard = Some(list.clone());
-                list
+                Ok(list)
             }
             Err(err) => {
-                eprintln!("catálogo remoto indisponível, usando lista embutida: {err}");
-                Arc::new(catalog::fallback())
+                eprintln!("índice remoto indisponível, usando cópia local: {err}");
+                let cached = catalog::read_cached_index(cache_path);
+                Ok(Arc::new(catalog::build(cached.as_deref())?))
             }
         }
     }
 
     /// Busca uma voz no catálogo pelo id.
-    pub async fn find_voice(&self, id: &str) -> AppResult<CatalogVoice> {
-        self.catalog()
-            .await
+    pub async fn find_voice(&self, cache_path: &Path, id: &str) -> AppResult<CatalogVoice> {
+        self.catalog(cache_path)
+            .await?
             .iter()
             .find(|v| v.id == id)
             .cloned()

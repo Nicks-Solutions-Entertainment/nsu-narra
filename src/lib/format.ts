@@ -1,5 +1,8 @@
+import type { VoiceInfo } from '@/engine';
+
 const bytesFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
 const countFormatter = new Intl.NumberFormat('pt-BR');
+const timeFormatter = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
 /** Formata bytes em KB/MB legíveis. Ex.: 63_201_294 → "60,3 MB". */
 export function formatBytes(bytes?: number): string {
@@ -19,6 +22,11 @@ export function formatCount(n: number): string {
   return countFormatter.format(n);
 }
 
+/** Hora curta, ex.: "14:05". */
+export function formatTime(timestamp: number): string {
+  return timeFormatter.format(timestamp);
+}
+
 /** Rótulos amigáveis para a qualidade do modelo. */
 const QUALITY_LABEL: Record<string, string> = {
   x_low: 'muito baixa',
@@ -31,9 +39,20 @@ export function formatQuality(quality: string): string {
   return QUALITY_LABEL[quality] ?? quality;
 }
 
-/** Capitaliza o nome do locutor. Ex.: "faber" → "Faber". */
+/** Capitaliza o nome do locutor. Ex.: "jenny_dioco" → "Jenny dioco". */
 export function formatVoiceName(name: string): string {
   return name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, ' ');
+}
+
+/**
+ * Texto de uma opção do seletor de voz.
+ * Ex.: "✓ Faber · média" (instalada) ou "Dii · média · ♀ · 60,6 MB".
+ */
+export function voiceOptionLabel(v: VoiceInfo): string {
+  const parts = [formatVoiceName(v.name), formatQuality(v.quality)];
+  if (v.gender) parts.push(v.gender === 'female' ? '♀' : '♂');
+  if (!v.installed && v.sizeBytes) parts.push(formatBytes(v.sizeBytes));
+  return `${v.installed ? '✓ ' : ''}${parts.join(' · ')}`;
 }
 
 /** Nome de arquivo para download, com data/hora para não sobrescrever. */

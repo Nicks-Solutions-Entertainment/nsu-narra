@@ -1,53 +1,51 @@
-import { PATH_MAP, voices as fetchAllVoices } from '@mintplex-labs/piper-tts-web';
-import type { VoiceInfo } from '../types';
-import { TARGET_LANGUAGE } from '../types';
+import { voices as libStaticVoices } from '@mintplex-labs/piper-tts-web';
+import { type CatalogEntry, mergeCatalog, OFFICIAL_INDEX_URL, parseOfficialIndex } from '../catalog';
+import { readCachedIndex, writeCachedIndex } from './voice-store';
 
-/** Entrada do catálogo sem o estado de instalação (que vem do armazenamento). */
-export type CatalogEntry = Omit<VoiceInfo, 'installed'>;
+export type { CatalogEntry };
 
 let catalogPromise: Promise<CatalogEntry[]> | null = null;
 
 /**
- * Retorna as vozes do idioma alvo suportadas pela biblioteca WASM.
+ * Retorna o catálogo completo (todos os idiomas): oficial + comunidade.
  *
- * Desempenho: o `voices.json` remoto (~centenas de KB) é buscado uma única vez
- * por sessão do worker e memoizado; a biblioteca cai para uma cópia local
- * embutida se o Hugging Face estiver indisponível.
+ * Fontes do índice oficial, em ordem:
+ *  1. `voices.json` do rhasspy/piper-voices (sempre o mais atual);
+ *  2. cópia salva no OPFS na última busca (funciona offline, como PWA);
+ *  3. lista embutida na biblioteca WASM (mais antiga, último recurso).
  *
- * Só retorna vozes presentes em `PATH_MAP`, pois a biblioteca não sabe
- * localizar modelos fora dele.
+ * Desempenho: memoizado por sessão do worker; uma falha permite nova tentativa.
  */
 export function getCatalog(): Promise<CatalogEntry[]> {
   catalogPromise ??= loadCatalog().catch((err) => {
-    catalogPromise = null; // permite nova tentativa depois de uma falha
+    catalogPromise = null;
     throw err;
   });
   return catalogPromise;
 }
 
-async function loadCatalog(): Promise<CatalogEntry[]> {
-  const all = await fetchAllVoices();
-  const paths = PATH_MAP as Record<string, string>;
-
-  return all
-    .filter((v) => v.language.code.startsWith(TARGET_LANGUAGE) && v.key in paths)
-    .map((v) => {
-      const modelPath = paths[v.key];
-      const files = v.files as Record<string, { size_bytes: number } | undefined>;
-      return {
-        id: v.key,
-        language: v.language.code,
-        name: v.name,
-        quality: v.quality,
-        sizeBytes: files[modelPath]?.size_bytes,
-      };
-    })
-    .sort((a, b) => a.name.localeCompare(b.name) || a.quality.localeCompare(b.quality));
+/** Busca uma voz pelo id. */
+export async function findVoice(id: string): Promise<CatalogEntry> {
+  const voice = (await getCatalog()).find((v) => v.id === id);
+  if (!voice) throw new Error(`Voz desconhecida: ${id}`);
+  return voice;
 }
 
-/** URLs remotas do modelo e da configuração de uma voz. */
-export function voiceUrls(voiceId: string, hfBase: string): { model: string; config: string } {
-  const path = (PATH_MAP as Record<string, string>)[voiceId];
-  if (!path) throw new Error(`Voz desconhecida: ${voiceId}`);
-  return { model: `${hfBase}/${path}`, config: `${hfBase}/${path}.json` };
+async function loadCatalog(): Promise<CatalogEntry[]> {
+  return mergeCatalog(await loadOfficial());
+}
+
+async function loadOfficial(): Promise<CatalogEntry[]> {
+  try {
+    const res = await fetch(OFFICIAL_INDEX_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    const parsed = parseOfficialIndex(JSON.parse(text));
+    void writeCachedIndex(text); // não bloqueia a resposta
+    return parsed;
+  } catch {
+    const cached = await readCachedIndex();
+    if (cached) return parseOfficialIndex(JSON.parse(cached));
+    return parseOfficialIndex(await libStaticVoices());
+  }
 }
