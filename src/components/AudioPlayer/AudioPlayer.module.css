@@ -1,0 +1,23 @@
+.wrapper {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.audio {
+  width: 100%;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.size {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}

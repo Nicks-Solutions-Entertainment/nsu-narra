@@ -1,0 +1,23 @@
+# dependências
+/node_modules
+
+# build Next.js
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Rust / Tauri
+/cli/target/
+/src-tauri/target/
+/src-tauri/gen/schemas/
+
+# vozes nunca vão para o repositório (baixadas pelo app)
+*.onnx
+*.onnx.json
+
+# misc
+.DS_Store
+*.pem
+.env*.local
+npm-debug.log*

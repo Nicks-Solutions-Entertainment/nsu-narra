@@ -1,0 +1,130 @@
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-1: #ffffff;
+  --surface-2: #eceef2;
+  --border: #dde1e7;
+  --text: #15181e;
+  --text-muted: #5b6372;
+  --accent: #3f63e0;
+  --accent-fg: #ffffff;
+  --accent-hover: #3354c7;
+  --success-bg: #ddf3e4;
+  --success-fg: #1b6b3a;
+  --danger-bg: #fdecec;
+  --danger-border: #f3c4c4;
+  --danger-fg: #9b1c1c;
+  --radius: 10px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1115;
+    --surface: #171a21;
+    --surface-1: #13161c;
+    --surface-2: #232733;
+    --border: #2a2f3b;
+    --text: #e8eaef;
+    --text-muted: #9aa2b2;
+    --accent: #7c9cff;
+    --accent-fg: #0f1115;
+    --accent-hover: #9bb3ff;
+    --success-bg: #173324;
+    --success-fg: #7fd8a0;
+    --danger-bg: #3a1618;
+    --danger-border: #5c2427;
+    --danger-fg: #ffb4b4;
+    color-scheme: dark;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.section-title {
+  display: block;
+  margin: 0 0 10px;
+  padding: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Botões compartilhados (classes globais usadas pelos componentes) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 120ms, border-color 120ms;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: var(--accent-hover);
+}
+
+.btn-secondary {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.btn-secondary:not(:disabled):hover {
+  border-color: var(--accent);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  min-height: 34px;
+  padding: 0 10px;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--text);
+  background: var(--surface-2);
+}

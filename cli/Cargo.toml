@@ -1,0 +1,13 @@
+[package]
+name = "piper-cli"
+version = "0.1.0"
+edition = "2021"
+description = "CLI de aprendizado: roteiro .txt -> narração .wav usando o Piper"
+license = "GPL-3.0-or-later"
+
+# Fase 2: apenas biblioteca padrão, sem crates externas.
+[dependencies]
+
+[profile.release]
+lto = true
+strip = true

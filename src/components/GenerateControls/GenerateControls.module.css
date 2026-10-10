@@ -1,0 +1,16 @@
+.wrapper {
+  display: grid;
+  gap: 10px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.status {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
