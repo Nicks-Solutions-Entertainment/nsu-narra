@@ -8,6 +8,11 @@ import styles from './VoicePicker.module.css';
 
 export type PreviewStatus = 'idle' | 'loading' | 'playing';
 
+/** Bytes a baixar agora (considera arquivos compartilhados já presentes). */
+export function downloadSize(voice: VoiceInfo): number | undefined {
+  return voice.downloadBytes || voice.sizeBytes;
+}
+
 export interface VoiceRowProps {
   voice: VoiceInfo;
   selected: boolean;
@@ -73,11 +78,16 @@ export const VoiceRow = memo(function VoiceRow({
           {name}
           {voice.gender && <span className={styles.gender}>{voice.gender === 'female' ? '♀' : '♂'}</span>}
           {voice.source === 'community' && <span className={styles.badge}>comunidade</span>}
+          {voice.family === 'kokoro' && (
+            <span className={styles.badgeSlow} title="Modelo Kokoro: ~8× mais lento que as vozes Piper para gerar o áudio">
+              Kokoro · mais lenta
+            </span>
+          )}
         </span>
         <span className={styles.rowMeta}>
           <LicenseBadge license={voice.license} commercial={voice.commercial} licenseNote={voice.licenseNote} />
           <span className={styles.metaText}>
-            · qualidade {formatQuality(voice.quality)}
+            {voice.family === 'kokoro' ? '' : ` · qualidade ${formatQuality(voice.quality)}`}
             {voice.attribution ? ` · ${voice.attribution}` : ''}
           </span>
         </span>
@@ -115,10 +125,15 @@ export const VoiceRow = memo(function VoiceRow({
             className={styles.downloadPill}
             onClick={() => onDownload(voice.id)}
             disabled={disabled}
-            aria-label={`Baixar ${name} (${formatBytes(voice.sizeBytes)})`}
+            aria-label={`Baixar ${name} (${formatBytes(downloadSize(voice))})`}
+            title={
+              voice.sharedBytes && (voice.downloadBytes ?? 0) > (voice.sizeBytes ?? 0)
+                ? 'Inclui o modelo Kokoro, baixado uma única vez para todas as vozes Kokoro'
+                : undefined
+            }
           >
             <Icon name="download" size={13} />
-            {formatBytes(voice.sizeBytes)}
+            {formatBytes(downloadSize(voice))}
           </button>
         )}
       </div>

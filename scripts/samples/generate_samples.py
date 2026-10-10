@@ -132,7 +132,9 @@ def main() -> None:
 
     # Índice consumido pela UI: frases + vozes que têm amostra local.
     index = json.loads(INDEX_JSON.read_text(encoding="utf-8")) if INDEX_JSON.exists() else {}
-    index[args.lang] = {"phrases": phrases, "voices": [v["id"] for v in voices]}
+    # Preserva vozes com amostras geradas fora deste script (ex.: Kokoro).
+    previous = index.get(args.lang, {}).get("voices", [])
+    index[args.lang] = {"phrases": phrases, "voices": sorted(set(previous) | {v["id"] for v in voices})}
     INDEX_JSON.parent.mkdir(parents=True, exist_ok=True)
     INDEX_JSON.write_text(json.dumps(index, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"índice atualizado: {INDEX_JSON.relative_to(ROOT)}")

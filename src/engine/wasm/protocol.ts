@@ -1,4 +1,4 @@
-import type { VoiceInfo } from '../types';
+import type { VoiceFamily, VoiceInfo } from '../types';
 
 /**
  * Protocolo de mensagens entre `WasmEngine` (thread da UI) e `tts.worker.ts`.
@@ -9,7 +9,8 @@ import type { VoiceInfo } from '../types';
 
 /** Operações suportadas e o tipo de retorno de cada uma. */
 export interface WorkerOps {
-  listVoices: { params: Record<string, never>; result: VoiceInfo[] };
+  /** `families`: limita às famílias pedidas (o desktop só pede `kokoro`). */
+  listVoices: { params: { families?: VoiceFamily[] }; result: VoiceInfo[] };
   download: { params: { voiceId: string }; result: null };
   remove: { params: { voiceId: string }; result: null };
   synthesize: { params: { text: string; voiceId: string }; result: ArrayBuffer };

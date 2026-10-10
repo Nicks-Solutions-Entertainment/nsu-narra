@@ -1,10 +1,12 @@
 import type { VoiceInfo } from '../types';
 import community from './community-voices.json';
+import kokoro from './kokoro-voices.json';
 import officialLicenses from './official-licenses.json';
 
 /**
- * Catálogo de vozes (independente de motor): oficial (rhasspy) + comunidade.
- * O desktop tem a mesma lógica em `src-tauri/src/services/catalog.rs`.
+ * Catálogo de vozes (independente de motor): oficial (rhasspy) + comunidade,
+ * e as vozes Kokoro quando a flag estiver ligada.
+ * O desktop tem a parte Piper em `src-tauri/src/services/catalog.rs`.
  */
 
 /** Base de download do repositório oficial de vozes. */
@@ -13,15 +15,27 @@ export const OFFICIAL_INDEX_URL = `${OFFICIAL_BASE}/voices.json`;
 /** Amostras publicadas pelo projeto Piper (MP3 ~100 KB, com CORS). */
 const OFFICIAL_SAMPLES = 'https://rhasspy.github.io/piper-samples/samples';
 
-/** Entrada do catálogo: metadados + onde baixar. `installed` vem do armazenamento. */
 const LICENSES = officialLicenses as Record<string, Pick<VoiceInfo, 'license' | 'commercial' | 'licenseNote'>>;
 
 /** Voz oficial nova, ainda fora de official-licenses.json. */
 const UNVERIFIED = { license: 'Não verificada', commercial: 'unclear', licenseNote: 'Licença ainda não verificada; confira o cartão da voz.' } as const;
 
-export type CatalogEntry = Omit<VoiceInfo, 'installed'> & {
-  modelUrl: string;
-  configUrl: string;
+/**
+ * Arquivo necessário para uma voz. A voz está instalada quando todos existem.
+ * `shared`: usado por várias vozes (só é apagado quando nenhuma o usa mais).
+ */
+export interface VoiceFile {
+  name: string;
+  url: string;
+  bytes?: number;
+  shared?: boolean;
+}
+
+/** Entrada do catálogo: metadados + arquivos. `installed` vem do armazenamento. */
+export type CatalogEntry = Omit<VoiceInfo, 'installed' | 'downloadBytes'> & {
+  files: VoiceFile[];
+  /** Voz do espeak-ng para os fonemas (vozes Kokoro). */
+  espeakVoice?: string;
 };
 
 /** Formato do `voices.json` do Piper (só os campos usados). */
@@ -31,6 +45,14 @@ interface RawVoice {
   quality: string;
   language: { code: string };
   files: Record<string, { size_bytes: number } | undefined>;
+}
+
+/** Arquivos de uma voz Piper: modelo e configuração (esta por último). */
+function piperFiles(id: string, modelUrl: string, configUrl: string, bytes?: number): VoiceFile[] {
+  return [
+    { name: `${id}.onnx`, url: modelUrl, bytes },
+    { name: `${id}.onnx.json`, url: configUrl },
+  ];
 }
 
 /**
@@ -44,39 +66,71 @@ export function parseOfficialIndex(raw: Record<string, RawVoice> | RawVoice[]): 
   for (const v of list) {
     const modelPath = Object.keys(v.files).find((p) => p.endsWith('.onnx'));
     if (!modelPath) continue;
+    const sizeBytes = v.files[modelPath]?.size_bytes;
     out.push({
       id: v.key,
       language: v.language.code,
       name: v.name,
       quality: v.quality,
-      sizeBytes: v.files[modelPath]?.size_bytes,
+      sizeBytes,
+      family: 'piper',
       source: 'official',
       ...(LICENSES[v.key] ?? UNVERIFIED),
       homepage: `https://huggingface.co/rhasspy/piper-voices/tree/main/${dirname(modelPath)}`,
       sampleUrl: `${OFFICIAL_SAMPLES}/${dirname(modelPath)}/speaker_0.mp3`,
-      modelUrl: `${OFFICIAL_BASE}/${modelPath}`,
-      configUrl: `${OFFICIAL_BASE}/${modelPath}.json`,
+      files: piperFiles(v.key, `${OFFICIAL_BASE}/${modelPath}`, `${OFFICIAL_BASE}/${modelPath}.json`, sizeBytes),
     });
   }
   return out;
 }
 
-/** Vozes da comunidade embutidas no build. */
-export const COMMUNITY_VOICES: readonly CatalogEntry[] = community.voices.map((v) => ({
+/** Vozes Piper da comunidade embutidas no build. */
+export const COMMUNITY_VOICES: readonly CatalogEntry[] = community.voices.map(({ modelUrl, configUrl, ...v }) => ({
   ...v,
   gender: v.gender as CatalogEntry['gender'],
   commercial: v.commercial as CatalogEntry['commercial'],
+  family: 'piper' as const,
   source: 'community' as const,
+  files: piperFiles(v.id, modelUrl, configUrl, v.sizeBytes),
+}));
+
+/** Nome do modelo Kokoro compartilhado no armazenamento local. */
+export const KOKORO_MODEL = kokoro.model;
+
+/**
+ * Vozes Kokoro: o modelo (~88 MB) é um arquivo compartilhado; cada voz só
+ * acrescenta seu vetor de estilo (~0,5 MB).
+ */
+export const KOKORO_VOICES: readonly CatalogEntry[] = kokoro.voices.map((v) => ({
+  id: v.id,
+  language: v.language,
+  name: v.name,
+  quality: 'medium',
+  gender: v.gender as CatalogEntry['gender'],
+  sizeBytes: v.bytes,
+  sharedBytes: kokoro.model.bytes,
+  family: 'kokoro' as const,
+  source: 'official' as const,
+  license: kokoro.license,
+  commercial: kokoro.commercial as CatalogEntry['commercial'],
+  attribution: kokoro.attribution,
+  homepage: kokoro.homepage,
+  espeakVoice: v.espeakVoice,
+  files: [
+    { name: kokoro.model.file, url: kokoro.model.url, bytes: kokoro.model.bytes, shared: true },
+    { name: `${v.id}.bin`, url: v.url, bytes: v.bytes },
+  ],
 }));
 
 /**
- * Junta oficial + comunidade (a oficial vence em caso de id repetido) e
- * ordena por idioma, nome e qualidade.
+ * Junta oficial + comunidade (a oficial vence em caso de id repetido) +
+ * extras (ex.: Kokoro) e ordena por idioma, nome e qualidade.
  */
-export function mergeCatalog(official: CatalogEntry[]): CatalogEntry[] {
+export function mergeCatalog(official: CatalogEntry[], extra: readonly CatalogEntry[] = []): CatalogEntry[] {
   const byId = new Map<string, CatalogEntry>();
   for (const v of COMMUNITY_VOICES) byId.set(v.id, v);
   for (const v of official) byId.set(v.id, v);
+  for (const v of extra) byId.set(v.id, v);
 
   return [...byId.values()].sort(
     (a, b) =>

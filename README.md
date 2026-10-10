@@ -69,6 +69,23 @@ O catálogo junta o `voices.json` oficial do [rhasspy/piper-voices](https://hugg
 
 Para adicionar uma voz da comunidade, ela precisa: estar num host com CORS (o Hugging Face serve), usar `phoneme_type: espeak`, ter `.onnx` + config acessíveis e uma licença que permita redistribuir o modelo sem modificação. Preencha `license`, `commercialUse` e `attribution` — a UI mostra esses dados.
 
+### Vozes Kokoro (flag `FEATURES.kokoro`)
+
+Três vozes pt-BR do [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) (Dora, Alex e Santa; Apache 2.0, uso comercial ✓) rodam no navegador ao lado das vozes Piper:
+
+- modelo compartilhado de ~88 MB, baixado uma vez, mais ~0,5 MB por voz; o modelo só é apagado quando a última voz Kokoro sai do aparelho;
+- ~8× mais lentas que as vozes Piper para gerar (marcadas "Kokoro · mais lenta" no seletor);
+- fonemas pelo espeak-ng do piper-phonemize (`pt-br`), inferência no mesmo onnxruntime 1.18;
+- no desktop, rodam no motor WASM dentro da janela (o back-end Rust só roda Piper).
+
+A flag é **temporária**: quando as vozes forem destiladas para Piper ([proposta](docs/proposta-narra-voice-lab.md)), desligue-a no build e o código do Kokoro sai do bundle:
+
+```bash
+NEXT_PUBLIC_FEATURE_KOKORO=off npm run build
+```
+
+Depois, remova `src/engine/wasm/kokoro.ts`, `src/engine/catalog/kokoro-*` e as amostras `public/samples/pt_BR/pt_BR-kokoro_*`.
+
 ### Licenças
 
 Cada voz tem `license` e `commercial` (`yes` | `no` | `unclear`). Para as oficiais, isso vem de [official-licenses.json](src/engine/catalog/official-licenses.json), gerado a partir dos `MODEL_CARD`s; uma voz ajustada ("finetuned") a partir de outra herda a restrição da base — por isso Faber, Cadu e Jeff (dataset CC0, base `lessac` só para pesquisa) aparecem como "uso comercial incerto". Para atualizar quando o catálogo oficial mudar:

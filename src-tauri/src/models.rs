@@ -15,6 +15,8 @@ pub struct VoiceInfo {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub size_bytes: Option<u64>,
     pub installed: bool,
+    /// Arquitetura do modelo; o back-end nativo só roda Piper.
+    pub family: &'static str,
     pub source: &'static str,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub gender: Option<String>,
@@ -41,6 +43,7 @@ impl VoiceInfo {
             quality: v.quality.clone(),
             size_bytes: v.size_bytes,
             installed,
+            family: "piper",
             source: v.source,
             gender: v.gender.clone(),
             license: v.license.clone(),

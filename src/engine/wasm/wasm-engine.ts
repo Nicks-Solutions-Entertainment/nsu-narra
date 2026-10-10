@@ -1,4 +1,4 @@
-import type { DownloadOptions, SynthesizeOptions, TtsEngine, VoiceInfo } from '../types';
+import type { DownloadOptions, SynthesizeOptions, TtsEngine, VoiceFamily, VoiceInfo } from '../types';
 import { AbortError } from '../types';
 import { wavBlob } from '../wav';
 import type { WorkerOp, WorkerOps, WorkerRequest, WorkerResponse } from './protocol';
@@ -26,9 +26,12 @@ export class WasmEngine implements TtsEngine {
   private nextId = 1;
   private pending = new Map<number, Pending>();
 
-  /** Lista as vozes pt-BR e quais já estão no OPFS. */
-  listVoices(): Promise<VoiceInfo[]> {
-    return this.call('listVoices', {});
+  /**
+   * Lista as vozes e quais já estão no OPFS.
+   * @param families Limita às famílias pedidas (o desktop só pede `kokoro`).
+   */
+  listVoices(families?: VoiceFamily[]): Promise<VoiceInfo[]> {
+    return this.call('listVoices', { families });
   }
 
   /** Baixa a voz para o OPFS, reportando percentual 0–100. */

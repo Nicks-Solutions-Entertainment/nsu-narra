@@ -1,0 +1,45 @@
+{
+  "$comment": "Vozes Kokoro-82M v1.0 (hexgrad, Apache 2.0) via export ONNX da onnx-community. Usadas só com FEATURES.kokoro ligada. O modelo é compartilhado por todas as vozes; cada voz é um vetor de estilo (510×256 float32). Fonemas: espeak-ng `espeakVoice`, como no misaki (G2P oficial do Kokoro).",
+  "license": "Apache 2.0",
+  "commercial": "yes",
+  "attribution": "hexgrad (Kokoro-82M)",
+  "homepage": "https://huggingface.co/hexgrad/Kokoro-82M",
+  "model": {
+    "file": "kokoro-82m-v1.0-q8.onnx",
+    "url": "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/onnx/model_quantized.onnx",
+    "bytes": 92361116,
+    "sampleRate": 24000
+  },
+  "voices": [
+    {
+      "id": "pt_BR-kokoro_dora",
+      "kokoroVoice": "pf_dora",
+      "language": "pt_BR",
+      "espeakVoice": "pt-br",
+      "name": "dora",
+      "gender": "female",
+      "url": "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/voices/pf_dora.bin",
+      "bytes": 522240
+    },
+    {
+      "id": "pt_BR-kokoro_alex",
+      "kokoroVoice": "pm_alex",
+      "language": "pt_BR",
+      "espeakVoice": "pt-br",
+      "name": "alex",
+      "gender": "male",
+      "url": "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/voices/pm_alex.bin",
+      "bytes": 522240
+    },
+    {
+      "id": "pt_BR-kokoro_santa",
+      "kokoroVoice": "pm_santa",
+      "language": "pt_BR",
+      "espeakVoice": "pt-br",
+      "name": "santa",
+      "gender": "male",
+      "url": "https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main/voices/pm_santa.bin",
+      "bytes": 522240
+    }
+  ]
+}

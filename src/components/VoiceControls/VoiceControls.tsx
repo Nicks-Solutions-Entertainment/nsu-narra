@@ -5,6 +5,7 @@ import { formatBytes, formatCount } from '@/lib/format';
 import { Icon } from '../Icon/Icon';
 import { Select } from '../Select/Select';
 import { VoicePicker, type VoicePickerPreview } from '../VoicePicker/VoicePicker';
+import { downloadSize } from '../VoicePicker/VoiceRow';
 import styles from './VoiceControls.module.css';
 
 export interface VoiceControlsProps {
@@ -134,7 +135,7 @@ function DownloadAction({ voice, downloadPct, disabled, onDownload, onCancelDown
   return (
     <button type="button" className={styles.downloadChip} onClick={() => onDownload(voice.id)} disabled={disabled}>
       <Icon name="download" size={15} />
-      Baixar {formatBytes(voice.sizeBytes)}
+      Baixar {formatBytes(downloadSize(voice))}
     </button>
   );
 }

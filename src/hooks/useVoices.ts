@@ -92,7 +92,7 @@ export function useVoices(engine: TtsEngine | null): VoicesState {
   const voices = useMemo(() => all.filter((v) => v.language === language), [all, language]);
   const selected = useMemo(() => voices.find((v) => v.id === selectedId) ?? null, [voices, selectedId]);
   const installed = useMemo(() => all.filter((v) => v.installed), [all]);
-  const installedBytes = useMemo(() => installed.reduce((n, v) => n + (v.sizeBytes ?? 0), 0), [installed]);
+  const installedBytes = useMemo(() => sumInstalledBytes(installed), [installed]);
 
   const selectVoice = useCallback((id: string) => {
     setSelectedId(id);
@@ -112,6 +112,21 @@ export function useVoices(engine: TtsEngine | null): VoicesState {
   const patchVoice = useCallback((id: string, patch: Partial<VoiceInfo>) => {
     setAll((list) => list.map((v) => (v.id === id ? { ...v, ...patch } : v)));
   }, []);
+
+  /**
+   * Relê o estado do armazenamento sem mostrar "carregando". Necessário quando
+   * arquivos compartilhados mudam (ex.: o modelo Kokoro), pois isso altera o
+   * tamanho a baixar de outras vozes. Barato: o catálogo já está em memória.
+   */
+  const sync = useCallback(async () => {
+    if (!engine) return;
+    try {
+      const list = await engine.listVoices();
+      setAll(list);
+    } catch {
+      /* mantém o estado local; o próximo carregamento corrige */
+    }
+  }, [engine]);
 
   const setProgress = useCallback((id: string, pct: number | null) => {
     setDownloads((map) => {
@@ -138,7 +153,8 @@ export function useVoices(engine: TtsEngine | null): VoicesState {
           signal: controller.signal,
           onProgress: (pct) => setProgress(id, pct),
         });
-        patchVoice(id, { installed: true });
+        patchVoice(id, { installed: true, downloadBytes: 0 });
+        if (all.find((v) => v.id === id)?.sharedBytes) void sync();
       } catch (err) {
         if (!controller.signal.aborted) setError(errorMessage(err));
       } finally {
@@ -146,7 +162,7 @@ export function useVoices(engine: TtsEngine | null): VoicesState {
         setProgress(id, null);
       }
     },
-    [engine, patchVoice, setProgress],
+    [engine, patchVoice, setProgress, all, sync],
   );
 
   const cancelDownload = useCallback((id: string) => {
@@ -172,6 +188,7 @@ export function useVoices(engine: TtsEngine | null): VoicesState {
       } catch (err) {
         setError(errorMessage(err));
       }
+      if (all.some((v) => removed.has(v.id) && v.sharedBytes)) void sync();
 
       if (selectedId && removed.has(selectedId)) {
         const remaining = all
@@ -181,7 +198,7 @@ export function useVoices(engine: TtsEngine | null): VoicesState {
         if (next) selectVoice(next.id);
       }
     },
-    [engine, patchVoice, selectedId, all, language, selectVoice],
+    [engine, patchVoice, selectedId, all, language, selectVoice, sync],
   );
 
   const reload = useCallback(() => {
@@ -207,6 +224,20 @@ export function useVoices(engine: TtsEngine | null): VoicesState {
     remove,
     reload,
   };
+}
+
+/**
+ * Espaço ocupado: tamanho de cada voz + arquivos compartilhados uma vez por
+ * família (o modelo Kokoro serve a todas as vozes Kokoro).
+ */
+function sumInstalledBytes(installed: VoiceInfo[]): number {
+  const shared = new Map<string, number>();
+  let total = 0;
+  for (const v of installed) {
+    total += v.sizeBytes ?? 0;
+    if (v.sharedBytes) shared.set(v.family, v.sharedBytes);
+  }
+  return total + [...shared.values()].reduce((n, b) => n + b, 0);
 }
 
 /** Agrupa as vozes por idioma; o idioma padrão vem primeiro, depois por nome. */

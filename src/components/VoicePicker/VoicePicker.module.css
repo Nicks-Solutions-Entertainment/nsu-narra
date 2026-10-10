@@ -308,6 +308,16 @@
   font-weight: 600;
 }
 
+.badgeSlow {
+  padding: 1px 7px;
+  font-size: 0.66rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--warn-fg);
+  border: 1px solid currentColor;
+  border-radius: 999px;
+}
+
 .gender {
   font-weight: 400;
   color: var(--text-muted);

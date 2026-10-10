@@ -1,13 +1,24 @@
 /// <reference lib="webworker" />
 import { PATH_MAP, TtsSession, WASM_BASE } from '@mintplex-labs/piper-tts-web';
+import { FEATURES } from '@/config/features';
 import { splitSentences } from '../chunk';
-import { AbortError } from '../types';
+import { AbortError, type VoiceFamily } from '../types';
 import { concatWav } from '../wav';
 import { ORT_BASE_URL } from './ort-paths';
 import { setNextVocabulary } from './phoneme-guard';
 import type { WorkerRequest, WorkerResponse } from './protocol';
-import { findVoice, getCatalog } from './voice-catalog';
-import { downloadVoice, listInstalled, modelFile, readVoiceConfig, removeVoice } from './voice-store';
+import type { KokoroEngine } from './kokoro';
+import { type CatalogEntry, findVoice, getCatalog } from './voice-catalog';
+import {
+  downloadVoice,
+  isInstalled,
+  listFiles,
+  missingBytes,
+  modelFile,
+  readFile,
+  readVoiceConfig,
+  removeVoice,
+} from './voice-store';
 
 /**
  * Web Worker que executa todo o trabalho pesado do motor WASM:
@@ -35,8 +46,13 @@ const WASM_PATHS = {
 /** Controladores de cancelamento por id de requisição. */
 const controllers = new Map<number, AbortController>();
 
-/** Sessão ONNX carregada (uma voz por vez, para limitar memória). */
+/** Sessão Piper carregada (uma voz por vez, para limitar memória). */
 let session: { voiceId: string; ready: Promise<TtsSession> } | null = null;
+
+/** Motor Kokoro carregado (o modelo é o mesmo para todas as vozes Kokoro). */
+let kokoro: Promise<KokoroEngine> | null = null;
+/** Vetores de estilo já lidos, por voz (~0,5 MB cada). */
+const kokoroStyles = new Map<string, Float32Array>();
 
 const post = (msg: WorkerResponse, transfer: Transferable[] = []) => self.postMessage(msg, transfer);
 
@@ -58,6 +74,7 @@ const post = (msg: WorkerResponse, transfer: Transferable[] = []) => self.postMe
 function getSession(voiceId: string): Promise<TtsSession> {
   if (session?.voiceId === voiceId) return session.ready;
 
+  void releaseKokoro(); // um modelo por vez na memória
   TtsSession._instance = null;
   const ready = readVoiceConfig<Parameters<typeof setNextVocabulary>[0]>(voiceId).then((config) => {
     // Sem a voz no OPFS a lib tentaria baixar de outro repositório e gravaria
@@ -75,16 +92,73 @@ function getSession(voiceId: string): Promise<TtsSession> {
 }
 
 /**
- * Lista o catálogo completo com o estado de instalação atual.
- * As URLs de download ficam no worker (a UI não precisa delas).
+ * Retorna o motor Kokoro, carregando o modelo compartilhado na 1ª vez.
+ * O código do Kokoro só é baixado aqui (import dinâmico) e só existe no
+ * bundle com `FEATURES.kokoro` ligada.
  */
-async function handleListVoices() {
-  const [catalog, installed] = await Promise.all([getCatalog(), listInstalled()]);
+function getKokoro(voice: CatalogEntry): Promise<KokoroEngine> {
+  if (!FEATURES.kokoro) return Promise.reject(new Error('Vozes Kokoro desativadas neste build.'));
+  if (kokoro) return kokoro;
+
+  // Um modelo por vez: descarta a sessão Piper antes de carregar o Kokoro.
+  session = null;
+  TtsSession._instance = null;
+
+  const modelName = voice.files.find((f) => f.shared)?.name ?? '';
+  const ready = Promise.all([loadKokoroModule(), readFile(modelName)]).then(([mod, model]) => {
+    if (!model) throw new Error('Esta voz não está instalada. Baixe-a antes de gerar.');
+    return mod.KokoroEngine.load(model);
+  });
+  kokoro = ready;
+  ready.catch(() => {
+    if (kokoro === ready) kokoro = null;
+  });
+  return ready;
+}
+
+/**
+ * Import do motor Kokoro. A condição fica escrita aqui (e não via `FEATURES`)
+ * para o bundler avaliá-la no build e nem gerar o chunk com a flag desligada.
+ */
+function loadKokoroModule(): Promise<typeof import('./kokoro')> {
+  return process.env.NEXT_PUBLIC_FEATURE_KOKORO !== 'off'
+    ? import('./kokoro')
+    : Promise.reject(new Error('Vozes Kokoro desativadas neste build.'));
+}
+
+/** Vetor de estilo da voz Kokoro (lido do OPFS uma vez). */
+async function getKokoroStyle(voice: CatalogEntry): Promise<Float32Array> {
+  const cached = kokoroStyles.get(voice.id);
+  if (cached) return cached;
+  const name = voice.files.find((f) => !f.shared)?.name ?? '';
+  const file = await readFile(name);
+  if (!file) throw new Error('Esta voz não está instalada. Baixe-a antes de gerar.');
+  const styles = new Float32Array(await file.arrayBuffer());
+  kokoroStyles.set(voice.id, styles);
+  return styles;
+}
+
+/** Solta o modelo Kokoro da memória (WASM). */
+async function releaseKokoro(): Promise<void> {
+  const current = kokoro;
+  kokoro = null;
+  kokoroStyles.clear();
+  const engine = await current?.catch(() => null);
+  await engine?.release();
+}
+
+/**
+ * Lista o catálogo com o estado de instalação atual e o que falta baixar.
+ * Arquivos e URLs ficam no worker (a UI não precisa deles).
+ */
+async function handleListVoices(families?: VoiceFamily[]) {
+  const [catalog, files] = await Promise.all([getCatalog(families), listFiles()]);
   return catalog.map((entry) => {
-    const { modelUrl, configUrl, ...voice } = entry;
-    void modelUrl;
-    void configUrl;
-    return { ...voice, installed: installed.has(voice.id) };
+    const { files: voiceFiles, espeakVoice, ...voice } = entry;
+    void voiceFiles;
+    void espeakVoice;
+    const installed = isInstalled(entry, files);
+    return { ...voice, installed, downloadBytes: installed ? 0 : missingBytes(entry, files) };
   });
 }
 
@@ -99,23 +173,39 @@ async function handleDownload(id: number, voiceId: string, signal: AbortSignal) 
   await downloadVoice(
     voice,
     (loaded, total) => {
-      const pct = total ? Math.floor((loaded / total) * 100) : 0;
+      const pct = total ? Math.min(100, Math.floor((loaded / total) * 100)) : 0;
       if (pct === lastPct) return;
       lastPct = pct;
-      post({ id, kind: 'progress', done: loaded, total });
+      post({ id, kind: 'progress', done: Math.min(loaded, total), total });
     },
     signal,
   );
   return null;
 }
 
-/** Remove a voz do OPFS e descarta a sessão se ela estiver carregada. */
+/**
+ * Remove a voz do OPFS e descarta o que estiver carregado dela.
+ * Arquivos compartilhados (modelo Kokoro) só saem quando nenhuma outra voz
+ * instalada os usa.
+ */
 async function handleRemove(voiceId: string) {
+  const voice = await findVoice(voiceId);
   if (session?.voiceId === voiceId) {
     session = null;
     TtsSession._instance = null;
   }
-  await removeVoice(voiceId);
+  kokoroStyles.delete(voiceId);
+
+  const [catalog, files] = await Promise.all([getCatalog(), listFiles()]);
+  const keep = new Set(
+    catalog
+      .filter((v) => v.id !== voiceId && isInstalled(v, files))
+      .flatMap((v) => v.files.filter((f) => f.shared).map((f) => f.name)),
+  );
+  if (voice.family === 'kokoro' && !voice.files.some((f) => f.shared && keep.has(f.name))) {
+    await releaseKokoro(); // o modelo vai sair do disco: solta da memória também
+  }
+  await removeVoice(voice, keep);
   return null;
 }
 
@@ -129,25 +219,35 @@ async function handleSynthesize(id: number, text: string, voiceId: string, signa
   const chunks = splitSentences(text, MAX_CHUNK_LEN);
   if (chunks.length === 0) throw new Error('Digite algum texto para gerar o áudio.');
 
-  const tts = await getSession(voiceId);
+  const voice = await findVoice(voiceId);
+  const generate = await chunkGenerator(voice);
   const parts: ArrayBuffer[] = [];
   post({ id, kind: 'progress', done: 0, total: chunks.length });
 
   for (let i = 0; i < chunks.length; i++) {
     if (signal.aborted) throw new AbortError('Geração cancelada.');
-    const wav = await tts.predict(chunks[i]);
-    parts.push(await wav.arrayBuffer());
+    parts.push(await generate(chunks[i]));
     post({ id, kind: 'progress', done: i + 1, total: chunks.length });
   }
 
   return concatWav(parts);
 }
 
+/** Função que gera um trecho (WAV) com o motor da família da voz. */
+async function chunkGenerator(voice: CatalogEntry): Promise<(text: string) => Promise<ArrayBuffer>> {
+  if (voice.family === 'kokoro') {
+    const [engine, styles] = await Promise.all([getKokoro(voice), getKokoroStyle(voice)]);
+    return (text) => engine.synthesize(text, styles, voice.espeakVoice ?? 'pt-br');
+  }
+  const tts = await getSession(voice.id);
+  return async (text) => (await tts.predict(text)).arrayBuffer();
+}
+
 /** Roteia cada requisição para o handler correspondente. */
 async function dispatch(req: Exclude<WorkerRequest, { op: 'cancel' }>, signal: AbortSignal) {
   switch (req.op) {
     case 'listVoices':
-      return handleListVoices();
+      return handleListVoices(req.params.families);
     case 'download':
       return handleDownload(req.id, req.params.voiceId, signal);
     case 'remove':

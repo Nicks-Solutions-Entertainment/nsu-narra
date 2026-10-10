@@ -31,6 +31,36 @@ export function concatWav(parts: ArrayBuffer[]): ArrayBuffer {
   return out.buffer;
 }
 
+/**
+ * Converte amostras float (-1..1, mono) em WAV PCM 16-bit com cabeçalho de
+ * 44 bytes — o mesmo formato do Piper, para `concatWav` funcionar igual.
+ * Desempenho: uma alocação e um laço sobre as amostras.
+ */
+export function pcmToWav(samples: Float32Array, sampleRate: number): ArrayBuffer {
+  const dataBytes = samples.length * 2;
+  const view = new DataView(new ArrayBuffer(WAV_HEADER_BYTES + dataBytes));
+  const ascii = (offset: number, text: string) => [...text].forEach((c, i) => view.setUint8(offset + i, c.charCodeAt(0)));
+
+  ascii(0, 'RIFF');
+  view.setUint32(4, 36 + dataBytes, true);
+  ascii(8, 'WAVEfmt ');
+  view.setUint32(16, 16, true); // tamanho do bloco fmt
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, 1, true); // mono
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true); // bytes por segundo
+  view.setUint16(32, 2, true); // bytes por amostra
+  view.setUint16(34, 16, true); // bits por amostra
+  ascii(36, 'data');
+  view.setUint32(40, dataBytes, true);
+
+  for (let i = 0, p = WAV_HEADER_BYTES; i < samples.length; i++, p += 2) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(p, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+  return view.buffer;
+}
+
 /** Empacota bytes WAV em um Blob reproduzível pelo `<audio>`. */
 export function wavBlob(bytes: ArrayBuffer | Uint8Array): Blob {
   return new Blob([bytes as BlobPart], { type: 'audio/wav' });

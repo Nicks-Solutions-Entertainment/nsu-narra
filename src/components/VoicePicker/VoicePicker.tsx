@@ -146,8 +146,9 @@ function Panel({
     );
   }, [voices, query, commercialOnly]);
   const hiddenByLicense = commercialOnly ? voices.filter((v) => v.commercial !== 'yes').length : 0;
-  const official = filtered.filter((v) => v.source === 'official');
-  const community = filtered.filter((v) => v.source === 'community');
+  const official = filtered.filter((v) => v.family === 'piper' && v.source === 'official');
+  const community = filtered.filter((v) => v.family === 'piper' && v.source === 'community');
+  const kokoro = filtered.filter((v) => v.family === 'kokoro');
 
   // Foco inicial: busca (se houver) ou a voz selecionada.
   useEffect(() => {
@@ -244,6 +245,7 @@ function Panel({
             <ul ref={listRef} className={styles.list} role="radiogroup" aria-label="Vozes">
               <Group label="Oficiais" voices={official} rowProps={rowProps} />
               <Group label="Comunidade" voices={community} rowProps={rowProps} />
+              <Group label="Kokoro · mais lentas" voices={kokoro} rowProps={rowProps} />
             </ul>
             {filtered.length === 0 && (
               <p className={styles.empty}>

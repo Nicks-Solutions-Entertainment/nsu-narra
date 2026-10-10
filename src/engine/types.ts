@@ -20,6 +20,14 @@ export type VoiceSource = 'official' | 'community';
  */
 export type CommercialUse = 'yes' | 'no' | 'unclear';
 
+/**
+ * Arquitetura do modelo, que define qual motor gera o áudio:
+ *  - `piper`: VITS, rápido; um modelo (~60 MB) por voz.
+ *  - `kokoro`: Kokoro-82M, ~8× mais lento; um modelo compartilhado (~88 MB)
+ *    + um vetor de estilo (~0,5 MB) por voz. Atrás da flag `FEATURES.kokoro`.
+ */
+export type VoiceFamily = 'piper' | 'kokoro';
+
 /** Metadados de uma voz exibidos no seletor. */
 export interface VoiceInfo {
   /** Identificador do Piper, ex.: `pt_BR-faber-medium`. */
@@ -33,6 +41,11 @@ export interface VoiceInfo {
   sizeBytes?: number;
   /** `true` se o modelo já está salvo no aparelho. */
   installed: boolean;
+  /** Bytes que ainda faltam baixar (considera arquivos compartilhados já presentes). */
+  downloadBytes?: number;
+  /** Tamanho de arquivos compartilhados entre vozes da mesma família (ex.: modelo Kokoro). */
+  sharedBytes?: number;
+  family: VoiceFamily;
   source: VoiceSource;
   gender?: 'male' | 'female';
   /** Rótulo curto da licença, ex.: `CC0`, `MIT`, `CC BY-NC-ND 4.0`. */
