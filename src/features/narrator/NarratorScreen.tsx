@@ -35,6 +35,7 @@ export function NarratorScreen() {
   const narrations = useNarrations(engine);
   const [text, setText] = useDraft();
   const [enterToSend, setEnterToSend] = useBooleanPreference(PREF_KEYS.enterToSend, true);
+  const [commercialOnly, setCommercialOnly] = useBooleanPreference(PREF_KEYS.commercialOnly, false);
   const preview = useVoicePreview(engine, narrations.running);
 
   const { selected, downloads } = voices;
@@ -111,6 +112,8 @@ export function NarratorScreen() {
                 downloads={downloads}
                 preview={preview}
                 loading={voices.loading}
+                commercialOnly={commercialOnly}
+                onCommercialOnlyChange={setCommercialOnly}
                 disabled={narrations.running}
                 onLanguageChange={voices.selectLanguage}
                 onVoiceChange={voices.selectVoice}

@@ -18,10 +18,11 @@ pub struct VoiceInfo {
     pub source: &'static str,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub gender: Option<String>,
+    pub license: String,
+    /// "yes" | "no" | "unclear" (mesmo que `CommercialUse` no TS)
+    pub commercial: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub license: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub commercial_use: Option<bool>,
+    pub license_note: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub attribution: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -43,7 +44,8 @@ impl VoiceInfo {
             source: v.source,
             gender: v.gender.clone(),
             license: v.license.clone(),
-            commercial_use: v.commercial_use,
+            commercial: v.commercial.clone(),
+            license_note: v.license_note.clone(),
             attribution: v.attribution.clone(),
             homepage: v.homepage.clone(),
             sample_url: v.sample_url.clone(),

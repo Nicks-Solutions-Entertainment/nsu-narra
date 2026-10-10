@@ -3,6 +3,7 @@ import type { VoiceInfo } from '@/engine';
 import { formatBytes, formatQuality, formatVoiceName } from '@/lib/format';
 import { ConfirmButton } from '../ConfirmButton/ConfirmButton';
 import { Icon } from '../Icon/Icon';
+import { LicenseBadge } from '../LicenseBadge/LicenseBadge';
 import styles from './VoicePicker.module.css';
 
 export type PreviewStatus = 'idle' | 'loading' | 'playing';
@@ -71,15 +72,14 @@ export const VoiceRow = memo(function VoiceRow({
         <span className={styles.rowName}>
           {name}
           {voice.gender && <span className={styles.gender}>{voice.gender === 'female' ? '♀' : '♂'}</span>}
-          {voice.source === 'community' && (
-            <span className={voice.commercialUse === false ? styles.badgeWarn : styles.badge}>
-              {voice.commercialUse === false ? 'não comercial' : voice.license}
-            </span>
-          )}
+          {voice.source === 'community' && <span className={styles.badge}>comunidade</span>}
         </span>
         <span className={styles.rowMeta}>
-          qualidade {formatQuality(voice.quality)}
-          {voice.attribution ? ` · ${voice.attribution}` : ''}
+          <LicenseBadge license={voice.license} commercial={voice.commercial} licenseNote={voice.licenseNote} />
+          <span className={styles.metaText}>
+            · qualidade {formatQuality(voice.quality)}
+            {voice.attribution ? ` · ${voice.attribution}` : ''}
+          </span>
         </span>
       </button>
 

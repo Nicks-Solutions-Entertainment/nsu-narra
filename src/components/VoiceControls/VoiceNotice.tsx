@@ -1,34 +1,34 @@
 import { memo } from 'react';
 import type { VoiceInfo } from '@/engine';
+import { COMMERCIAL_LABEL, licenseSummary } from '@/lib/licenses';
+import { LicenseBadge } from '../LicenseBadge/LicenseBadge';
 import styles from './VoiceNotice.module.css';
 
 /**
- * Linha de créditos/licença da voz selecionada.
- * Vozes da comunidade mostram autor e licença; as não comerciais são destacadas.
+ * Linha de licença da voz selecionada: selo ⚖, situação de uso comercial e
+ * uma explicação em linguagem simples do que a licença permite.
  */
 export const VoiceNotice = memo(function VoiceNotice({ voice }: { voice: VoiceInfo | null }) {
   if (!voice) return null;
-
-  const link = voice.homepage && (
-    <a href={voice.homepage} target="_blank" rel="noreferrer">
-      ver licença
-    </a>
-  );
-
-  if (voice.source === 'community') {
-    return (
-      <p className={styles.notice}>
-        Voz da comunidade · {voice.attribution} · {voice.license}
-        {voice.commercialUse === false && <strong className={styles.warn}> · somente uso não comercial</strong>}
-        {link && <> · {link}</>}
-      </p>
-    );
-  }
+  const summary = licenseSummary(voice.license);
 
   return (
     <p className={styles.notice}>
-      Voz oficial Piper · confira a licença antes de uso comercial{link && <> · {link}</>}
+      <LicenseBadge license={voice.license} commercial={voice.commercial} licenseNote={voice.licenseNote} />
+      <span className={styles.status} data-commercial={voice.commercial}>
+        {' '}
+        · {COMMERCIAL_LABEL[voice.commercial]}
+      </span>
+      {voice.licenseNote ? ` — ${voice.licenseNote}` : summary ? ` — ${summary}` : ''}
+      {voice.attribution && ` Crédito: ${voice.attribution}.`}
+      {voice.homepage && (
+        <>
+          {' '}
+          <a href={voice.homepage} target="_blank" rel="noreferrer">
+            Ver cartão da voz
+          </a>
+        </>
+      )}
     </p>
   );
 });
-

@@ -1,0 +1,27 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: help;
+  color: var(--text-muted);
+}
+
+/* A cor do ícone indica a situação de uso comercial. */
+.badge svg {
+  flex: none;
+}
+
+.badge[data-commercial='yes'] svg {
+  color: var(--ok-fg);
+}
+
+.badge[data-commercial='unclear'] svg {
+  color: var(--warn-fg);
+}
+
+.badge[data-commercial='no'] svg {
+  color: var(--danger-fg);
+}

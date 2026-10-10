@@ -15,6 +15,7 @@ const PATHS = {
   search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4',
   storage: 'M4 5h16v5H4zM4 14h16v5H4zM8 7.5h.01M8 16.5h.01',
   chevron: 'M6 9l6 6 6-6',
+  law: 'M12 3v18M7 21h10M5 7h14M12 3l-1.5 2h3zM5 7l-3 6.5a3 3 0 0 0 6 0zM19 7l-3 6.5a3 3 0 0 0 6 0z',
 } as const;
 
 /** Ícones desenhados como formas cheias. */

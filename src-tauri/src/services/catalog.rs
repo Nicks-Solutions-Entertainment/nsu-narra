@@ -14,6 +14,9 @@ const OFFICIAL_INDEX: &str = "https://huggingface.co/rhasspy/piper-voices/resolv
 /// Amostras publicadas pelo projeto Piper (preview sem baixar o modelo).
 const OFFICIAL_SAMPLES: &str = "https://rhasspy.github.io/piper-samples/samples";
 const COMMUNITY_JSON: &str = include_str!("../../../src/engine/catalog/community-voices.json");
+/// Licença e situação comercial das vozes oficiais (gerado por
+/// scripts/licenses/build-official-licenses.mjs).
+const OFFICIAL_LICENSES_JSON: &str = include_str!("../../../src/engine/catalog/official-licenses.json");
 
 /// Voz do catálogo com as URLs de download.
 #[derive(Debug, Clone)]
@@ -25,8 +28,10 @@ pub struct CatalogVoice {
     pub size_bytes: Option<u64>,
     pub source: &'static str,
     pub gender: Option<String>,
-    pub license: Option<String>,
-    pub commercial_use: Option<bool>,
+    pub license: String,
+    /// "yes" | "no" | "unclear"
+    pub commercial: String,
+    pub license_note: Option<String>,
     pub attribution: Option<String>,
     pub homepage: Option<String>,
     pub sample_url: Option<String>,
@@ -55,6 +60,14 @@ struct RawFile {
 }
 
 // --- formato de community-voices.json ---
+#[derive(Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct LicenseInfo {
+    license: String,
+    commercial: String,
+    license_note: Option<String>,
+}
+
 #[derive(Deserialize)]
 struct CommunityFile {
     voices: Vec<CommunityVoice>,
@@ -71,8 +84,9 @@ struct CommunityVoice {
     size_bytes: Option<u64>,
     model_url: String,
     config_url: String,
-    license: Option<String>,
-    commercial_use: Option<bool>,
+    license: String,
+    commercial: String,
+    license_note: Option<String>,
     attribution: Option<String>,
     homepage: Option<String>,
     sample_url: Option<String>,
@@ -119,11 +133,18 @@ pub fn write_cached_index(path: &Path, bytes: &[u8]) {
 
 fn parse_official(bytes: &[u8]) -> AppResult<Vec<CatalogVoice>> {
     let raw: HashMap<String, RawVoice> = serde_json::from_slice(bytes)?;
+    let licenses: HashMap<String, LicenseInfo> =
+        serde_json::from_str(OFFICIAL_LICENSES_JSON).expect("official-licenses.json inválido");
     Ok(raw
         .into_values()
         .filter_map(|v| {
             let (path, file) = v.files.iter().find(|(p, _)| p.ends_with(".onnx"))?;
             let dir = path.rsplit_once('/').map_or("", |(d, _)| d);
+            let lic = licenses.get(&v.key).cloned().unwrap_or(LicenseInfo {
+                license: "Não verificada".into(),
+                commercial: "unclear".into(),
+                license_note: Some("Licença ainda não verificada; confira o cartão da voz.".into()),
+            });
             Some(CatalogVoice {
                 model_url: format!("{OFFICIAL_BASE}/{path}"),
                 config_url: format!("{OFFICIAL_BASE}/{path}.json"),
@@ -136,8 +157,9 @@ fn parse_official(bytes: &[u8]) -> AppResult<Vec<CatalogVoice>> {
                 quality: v.quality,
                 source: "official",
                 gender: None,
-                license: None,
-                commercial_use: None,
+                license: lic.license,
+                commercial: lic.commercial,
+                license_note: lic.license_note,
                 attribution: None,
             })
         })
@@ -158,7 +180,8 @@ fn community() -> Vec<CatalogVoice> {
             source: "community",
             gender: v.gender,
             license: v.license,
-            commercial_use: v.commercial_use,
+            commercial: v.commercial,
+            license_note: v.license_note,
             attribution: v.attribution,
             homepage: v.homepage,
             sample_url: v.sample_url,

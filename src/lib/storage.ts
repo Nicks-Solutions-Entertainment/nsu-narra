@@ -28,4 +28,5 @@ export const PREF_KEYS = {
   language: 'narra:language',
   draft: 'narra:draft',
   enterToSend: 'narra:enter-to-send',
+  commercialOnly: 'narra:commercial-only',
 } as const;

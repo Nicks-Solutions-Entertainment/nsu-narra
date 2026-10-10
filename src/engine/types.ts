@@ -11,6 +11,15 @@ export type VoiceQuality = 'x_low' | 'low' | 'medium' | 'high';
 /** `official`: rhasspy/piper-voices · `community`: catalog/community-voices.json. */
 export type VoiceSource = 'official' | 'community';
 
+/**
+ * Situação de uso comercial:
+ *  - `yes`: a licença permite (pode exigir crédito);
+ *  - `no`: a licença proíbe;
+ *  - `unclear`: a licença da voz permite, mas a base do treino tem restrição
+ *    ou é desconhecida (ver `licenseNote`).
+ */
+export type CommercialUse = 'yes' | 'no' | 'unclear';
+
 /** Metadados de uma voz exibidos no seletor. */
 export interface VoiceInfo {
   /** Identificador do Piper, ex.: `pt_BR-faber-medium`. */
@@ -26,10 +35,11 @@ export interface VoiceInfo {
   installed: boolean;
   source: VoiceSource;
   gender?: 'male' | 'female';
-  /** Licença declarada pelo autor (vozes da comunidade). */
-  license?: string;
-  /** `false` quando a licença proíbe uso comercial. */
-  commercialUse?: boolean;
+  /** Rótulo curto da licença, ex.: `CC0`, `MIT`, `CC BY-NC-ND 4.0`. */
+  license: string;
+  commercial: CommercialUse;
+  /** Por que a situação é a que é (ex.: base de treino restritiva). */
+  licenseNote?: string;
   attribution?: string;
   /** Página do modelo (cartão com licença e detalhes). */
   homepage?: string;

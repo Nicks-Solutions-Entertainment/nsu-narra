@@ -1,5 +1,6 @@
 import type { VoiceInfo } from '../types';
 import community from './community-voices.json';
+import officialLicenses from './official-licenses.json';
 
 /**
  * Catálogo de vozes (independente de motor): oficial (rhasspy) + comunidade.
@@ -13,6 +14,11 @@ export const OFFICIAL_INDEX_URL = `${OFFICIAL_BASE}/voices.json`;
 const OFFICIAL_SAMPLES = 'https://rhasspy.github.io/piper-samples/samples';
 
 /** Entrada do catálogo: metadados + onde baixar. `installed` vem do armazenamento. */
+const LICENSES = officialLicenses as Record<string, Pick<VoiceInfo, 'license' | 'commercial' | 'licenseNote'>>;
+
+/** Voz oficial nova, ainda fora de official-licenses.json. */
+const UNVERIFIED = { license: 'Não verificada', commercial: 'unclear', licenseNote: 'Licença ainda não verificada; confira o cartão da voz.' } as const;
+
 export type CatalogEntry = Omit<VoiceInfo, 'installed'> & {
   modelUrl: string;
   configUrl: string;
@@ -45,6 +51,7 @@ export function parseOfficialIndex(raw: Record<string, RawVoice> | RawVoice[]): 
       quality: v.quality,
       sizeBytes: v.files[modelPath]?.size_bytes,
       source: 'official',
+      ...(LICENSES[v.key] ?? UNVERIFIED),
       homepage: `https://huggingface.co/rhasspy/piper-voices/tree/main/${dirname(modelPath)}`,
       sampleUrl: `${OFFICIAL_SAMPLES}/${dirname(modelPath)}/speaker_0.mp3`,
       modelUrl: `${OFFICIAL_BASE}/${modelPath}`,
@@ -58,6 +65,7 @@ export function parseOfficialIndex(raw: Record<string, RawVoice> | RawVoice[]): 
 export const COMMUNITY_VOICES: readonly CatalogEntry[] = community.voices.map((v) => ({
   ...v,
   gender: v.gender as CatalogEntry['gender'],
+  commercial: v.commercial as CatalogEntry['commercial'],
   source: 'community' as const,
 }));
 

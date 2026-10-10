@@ -69,6 +69,14 @@ O catálogo junta o `voices.json` oficial do [rhasspy/piper-voices](https://hugg
 
 Para adicionar uma voz da comunidade, ela precisa: estar num host com CORS (o Hugging Face serve), usar `phoneme_type: espeak`, ter `.onnx` + config acessíveis e uma licença que permita redistribuir o modelo sem modificação. Preencha `license`, `commercialUse` e `attribution` — a UI mostra esses dados.
 
+### Licenças
+
+Cada voz tem `license` e `commercial` (`yes` | `no` | `unclear`). Para as oficiais, isso vem de [official-licenses.json](src/engine/catalog/official-licenses.json), gerado a partir dos `MODEL_CARD`s; uma voz ajustada ("finetuned") a partir de outra herda a restrição da base — por isso Faber, Cadu e Jeff (dataset CC0, base `lessac` só para pesquisa) aparecem como "uso comercial incerto". Para atualizar quando o catálogo oficial mudar:
+
+```bash
+node scripts/licenses/build-official-licenses.mjs
+```
+
 ### Prévias
 
 O ▶ de cada voz usa, em ordem: um OGG pré-gravado do projeto (`public/samples/<idioma>/<voz>/<n>.ogg`, com uma frase sorteada a cada carregamento da página), a amostra publicada pelo Piper (vozes oficiais de outros idiomas) ou, se a voz estiver instalada, uma frase gerada no aparelho.

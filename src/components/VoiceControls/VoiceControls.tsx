@@ -18,6 +18,8 @@ export interface VoiceControlsProps {
   preview: VoicePickerPreview;
   loading: boolean;
   disabled: boolean;
+  commercialOnly: boolean;
+  onCommercialOnlyChange: (value: boolean) => void;
   onLanguageChange: (code: string) => void;
   onVoiceChange: (id: string) => void;
   onDownload: (id: string) => void;
@@ -42,6 +44,8 @@ export const VoiceControls = memo(function VoiceControls({
   preview,
   loading,
   disabled,
+  commercialOnly,
+  onCommercialOnlyChange,
   onLanguageChange,
   onVoiceChange,
   onDownload,
@@ -79,6 +83,8 @@ export const VoiceControls = memo(function VoiceControls({
         downloads={downloads}
         preview={preview}
         disabled={disabled}
+        commercialOnly={commercialOnly}
+        onCommercialOnlyChange={onCommercialOnlyChange}
         onSelect={onVoiceChange}
         onDownload={onDownload}
         onCancelDownload={onCancelDownload}

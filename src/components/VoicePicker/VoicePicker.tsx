@@ -5,6 +5,7 @@ import { formatBytes, formatVoiceName } from '@/lib/format';
 import { languageLabel } from '@/lib/languages';
 import { sessionPhrase } from '@/lib/voice-samples';
 import { Icon } from '../Icon/Icon';
+import { Toggle } from '../Toggle/Toggle';
 import { ManageVoices } from './ManageVoices';
 import { type PreviewStatus, VoiceRow } from './VoiceRow';
 import styles from './VoicePicker.module.css';
@@ -32,6 +33,9 @@ export interface VoicePickerProps {
   downloads: DownloadMap;
   preview: VoicePickerPreview;
   disabled: boolean;
+  /** Mostrar só vozes cuja licença permite uso comercial. */
+  commercialOnly: boolean;
+  onCommercialOnlyChange: (value: boolean) => void;
   onSelect: (id: string) => void;
   onDownload: (id: string) => void;
   onCancelDownload: (id: string) => void;
@@ -119,6 +123,8 @@ function Panel({
   downloads,
   preview,
   disabled,
+  commercialOnly,
+  onCommercialOnlyChange,
   onSelect,
   onDownload,
   onCancelDownload,
@@ -133,8 +139,13 @@ function Panel({
 
   const filtered = useMemo(() => {
     const q = normalize(query.trim());
-    return q ? voices.filter((v) => normalize(`${v.name} ${v.attribution ?? ''}`).includes(q)) : voices;
-  }, [voices, query]);
+    return voices.filter(
+      (v) =>
+        (!commercialOnly || v.commercial === 'yes') &&
+        (!q || normalize(`${v.name} ${v.attribution ?? ''} ${v.license}`).includes(q)),
+    );
+  }, [voices, query, commercialOnly]);
+  const hiddenByLicense = commercialOnly ? voices.filter((v) => v.commercial !== 'yes').length : 0;
   const official = filtered.filter((v) => v.source === 'official');
   const community = filtered.filter((v) => v.source === 'community');
 
@@ -213,6 +224,16 @@ function Panel({
             </label>
           )}
 
+          <div className={styles.filters}>
+            <Toggle
+              checked={commercialOnly}
+              onChange={onCommercialOnlyChange}
+              label="Somente uso comercial"
+              title="Mostra apenas vozes cuja licença permite uso comercial sem ressalvas"
+            />
+            {hiddenByLicense > 0 && <span className={styles.filterHint}>{hiddenByLicense} ocultas</span>}
+          </div>
+
           {phrase && (
             <p className={styles.phrase}>
               <Icon name="play" size={11} /> Prévia: “{phrase.text}” <span>— {phrase.source}</span>
@@ -224,7 +245,13 @@ function Panel({
               <Group label="Oficiais" voices={official} rowProps={rowProps} />
               <Group label="Comunidade" voices={community} rowProps={rowProps} />
             </ul>
-            {filtered.length === 0 && <p className={styles.empty}>Nenhuma voz encontrada.</p>}
+            {filtered.length === 0 && (
+              <p className={styles.empty}>
+                {commercialOnly && !query
+                  ? 'Nenhuma voz deste idioma tem licença que permita uso comercial sem ressalvas. Desative o filtro e passe o mouse sobre o ⚖ de cada voz para ver o motivo.'
+                  : 'Nenhuma voz encontrada.'}
+              </p>
+            )}
           </div>
         </>
       ) : (

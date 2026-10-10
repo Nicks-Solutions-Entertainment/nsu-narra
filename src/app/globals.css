@@ -13,6 +13,7 @@
   --send-bg: #18181b;
   --send-fg: #ffffff;
   --warn-fg: #a15c00;
+  --ok-fg: #1f7a3d;
   --danger-bg: #fdecec;
   --danger-border: #f3c4c4;
   --danger-fg: #9b1c1c;
@@ -37,6 +38,7 @@
     --send-bg: #ececef;
     --send-fg: #0e0e10;
     --warn-fg: #f0b45a;
+    --ok-fg: #6fd18f;
     --danger-bg: #3a1618;
     --danger-border: #5c2427;
     --danger-fg: #ffb4b4;

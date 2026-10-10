@@ -1,15 +1,27 @@
 .notice {
   margin: 0;
+  padding: 0 14px;
   font-size: 0.75rem;
   color: var(--text-muted);
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .notice a {
   color: inherit;
 }
 
-.warn {
+.status {
   font-weight: 600;
+}
+
+.status[data-commercial='yes'] {
+  color: var(--ok-fg);
+}
+
+.status[data-commercial='unclear'] {
   color: var(--warn-fg);
+}
+
+.status[data-commercial='no'] {
+  color: var(--danger-fg);
 }
