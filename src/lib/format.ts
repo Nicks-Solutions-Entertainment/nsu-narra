@@ -1,5 +1,3 @@
-import type { VoiceInfo } from '@/engine';
-
 const bytesFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
 const countFormatter = new Intl.NumberFormat('pt-BR');
 const timeFormatter = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -42,17 +40,6 @@ export function formatQuality(quality: string): string {
 /** Capitaliza o nome do locutor. Ex.: "jenny_dioco" → "Jenny dioco". */
 export function formatVoiceName(name: string): string {
   return name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, ' ');
-}
-
-/**
- * Texto de uma opção do seletor de voz.
- * Ex.: "✓ Faber · média" (instalada) ou "Dii · média · ♀ · 60,6 MB".
- */
-export function voiceOptionLabel(v: VoiceInfo): string {
-  const parts = [formatVoiceName(v.name), formatQuality(v.quality)];
-  if (v.gender) parts.push(v.gender === 'female' ? '♀' : '♂');
-  if (!v.installed && v.sizeBytes) parts.push(formatBytes(v.sizeBytes));
-  return `${v.installed ? '✓ ' : ''}${parts.join(' · ')}`;
 }
 
 /** Nome de arquivo para download, com data/hora para não sobrescrever. */

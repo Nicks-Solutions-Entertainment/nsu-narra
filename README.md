@@ -69,6 +69,16 @@ O catálogo junta o `voices.json` oficial do [rhasspy/piper-voices](https://hugg
 
 Para adicionar uma voz da comunidade, ela precisa: estar num host com CORS (o Hugging Face serve), usar `phoneme_type: espeak`, ter `.onnx` + config acessíveis e uma licença que permita redistribuir o modelo sem modificação. Preencha `license`, `commercialUse` e `attribution` — a UI mostra esses dados.
 
+### Prévias
+
+O ▶ de cada voz usa, em ordem: um OGG pré-gravado do projeto (`public/samples/<idioma>/<voz>/<n>.ogg`, com uma frase sorteada a cada carregamento da página), a amostra publicada pelo Piper (vozes oficiais de outros idiomas) ou, se a voz estiver instalada, uma frase gerada no aparelho.
+
+Para refazer os OGGs depois de mudar as frases em `voice-demos/voice-exemples_ptbr.md` ou adicionar vozes (requer `pip install piper-tts` e `ffmpeg`):
+
+```bash
+python scripts/samples/generate_samples.py --cache <pasta-para-modelos> --lang pt_BR --force
+```
+
 ## Decisões de desempenho
 
 - **Inferência fora da thread da UI**: o motor WASM roda num Web Worker; o áudio volta como `ArrayBuffer` transferido (sem cópia).

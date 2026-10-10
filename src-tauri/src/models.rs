@@ -26,6 +26,8 @@ pub struct VoiceInfo {
     pub attribution: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub homepage: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sample_url: Option<String>,
 }
 
 impl VoiceInfo {
@@ -44,6 +46,7 @@ impl VoiceInfo {
             commercial_use: v.commercial_use,
             attribution: v.attribution.clone(),
             homepage: v.homepage.clone(),
+            sample_url: v.sample_url.clone(),
         }
     }
 }

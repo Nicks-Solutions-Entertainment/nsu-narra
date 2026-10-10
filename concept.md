@@ -488,18 +488,19 @@ Lembrar: acelerar com NPU/GPU rende pouco para o Piper. O que ajuda é gerar por
 
 ## 14. Checklist
 
-- [ ] Fase 0: spike WASM gera pt-BR no PC e no celular
-- [ ] Fase 0: confirmar índice de vozes (`voices.json` ou `tts.voices()`)
-- [ ] Fase 1: `output: 'export'` + interface `TtsEngine` + `WasmEngine`
-- [ ] Fase 1: tela com seletor de voz, texto, gerar, player e baixar
-- [ ] Fase 1: manifest PWA + `coi-serviceworker`
-- [ ] Fase 1: deploy no GitHub Pages
-- [ ] Fase 2: CLI em Rust funcionando com `.txt` → `.wav`
-- [ ] Fase 3: Tauri com `TauriEngine` (listar, baixar, gerar)
+- [x] Fase 0: spike WASM gera pt-BR no PC (`@mintplex-labs/piper-tts-web` + onnxruntime servido em `public/ort/`)
+- [ ] Fase 0: spike WASM gera pt-BR no celular
+- [x] Fase 0: confirmar índice de vozes — existe `voices.json` na raiz do `rhasspy/piper-voices` (177 vozes, 58 idiomas)
+- [x] Fase 1: `output: 'export'` + interface `TtsEngine` + `WasmEngine`
+- [x] Fase 1: tela com seletor de voz, texto, gerar, player e baixar (layout de chat, prévias, gerenciar vozes)
+- [x] Fase 1: manifest PWA + `coi-serviceworker`
+- [ ] Fase 1: deploy no GitHub Pages — workflow pronto (dispara por tag `v*`); falta liberar tags no environment `github-pages` e publicar a primeira tag
+- [ ] Fase 2: CLI em Rust funcionando com `.txt` → `.wav` — código em `cli/`, ainda não compilado
+- [ ] Fase 3: Tauri com `TauriEngine` (listar, baixar, gerar) — código em `src-tauri/`, ainda não compilado
 - [ ] Fase 3: decidir como embutir o Piper e fechar a questão da licença
-- [ ] Fase 3: release automático dos instaladores
+- [ ] Fase 3: release automático dos instaladores — `release.yml` pronto, ainda não executado
 - [ ] Fase 4: decidir entre PWA puro e Capacitor
-- [ ] Voz feminina pt-BR: procurar vozes prontas da comunidade e conferir a licença
+- [x] Voz feminina pt-BR: Dii (OpenVoiceOS/TigreGotico), CC BY-NC-ND 4.0 — somente uso não comercial
 
 ## 15. Links
 

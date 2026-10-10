@@ -1,0 +1,127 @@
+import { memo } from 'react';
+import type { VoiceInfo } from '@/engine';
+import { formatBytes, formatQuality, formatVoiceName } from '@/lib/format';
+import { ConfirmButton } from '../ConfirmButton/ConfirmButton';
+import { Icon } from '../Icon/Icon';
+import styles from './VoicePicker.module.css';
+
+export type PreviewStatus = 'idle' | 'loading' | 'playing';
+
+export interface VoiceRowProps {
+  voice: VoiceInfo;
+  selected: boolean;
+  /** Percentual do download; `undefined` se não está baixando. */
+  downloadPct?: number;
+  preview: PreviewStatus;
+  canPreview: boolean;
+  /** Bloqueia remover/baixar (ex.: durante uma narração). */
+  disabled: boolean;
+  onSelect: (id: string) => void;
+  onPreview: (voice: VoiceInfo) => void;
+  onDownload: (id: string) => void;
+  onCancelDownload: (id: string) => void;
+  onRemove: (id: string) => void;
+}
+
+/**
+ * Linha do seletor: ▶ prévia · dados da voz (clique seleciona) · ação
+ * (baixar, progresso, ou remover com confirmação).
+ * Memoizada: o progresso/prévia de uma voz não re-renderiza as outras.
+ */
+export const VoiceRow = memo(function VoiceRow({
+  voice,
+  selected,
+  downloadPct,
+  preview,
+  canPreview,
+  disabled,
+  onSelect,
+  onPreview,
+  onDownload,
+  onCancelDownload,
+  onRemove,
+}: VoiceRowProps) {
+  const name = formatVoiceName(voice.name);
+
+  return (
+    <li className={`${styles.row} ${selected ? styles.rowSelected : ''}`}>
+      <button
+        type="button"
+        className={`${styles.previewButton} ${preview !== 'idle' ? styles.previewActive : ''}`}
+        onClick={() => onPreview(voice)}
+        disabled={!canPreview && preview === 'idle'}
+        aria-label={preview === 'idle' ? `Ouvir prévia de ${name}` : `Parar prévia de ${name}`}
+        title={canPreview ? 'Ouvir prévia' : 'Prévia indisponível — baixe a voz para ouvir'}
+      >
+        {preview === 'loading' ? (
+          <span className={styles.spinner} aria-hidden="true" />
+        ) : (
+          <Icon name={preview === 'playing' ? 'pause' : 'play'} size={14} />
+        )}
+      </button>
+
+      <button
+        type="button"
+        role="radio"
+        aria-checked={selected}
+        className={styles.rowMain}
+        onClick={() => onSelect(voice.id)}
+        data-voice-option
+      >
+        <span className={styles.rowName}>
+          {name}
+          {voice.gender && <span className={styles.gender}>{voice.gender === 'female' ? '♀' : '♂'}</span>}
+          {voice.source === 'community' && (
+            <span className={voice.commercialUse === false ? styles.badgeWarn : styles.badge}>
+              {voice.commercialUse === false ? 'não comercial' : voice.license}
+            </span>
+          )}
+        </span>
+        <span className={styles.rowMeta}>
+          qualidade {formatQuality(voice.quality)}
+          {voice.attribution ? ` · ${voice.attribution}` : ''}
+        </span>
+      </button>
+
+      <div className={styles.rowAction}>
+        {downloadPct !== undefined ? (
+          <button
+            type="button"
+            className={styles.progressPill}
+            onClick={() => onCancelDownload(voice.id)}
+            aria-label={`Cancelar download de ${name} (${downloadPct}%)`}
+            title="Cancelar download"
+          >
+            <span className={styles.progressPct}>{downloadPct}%</span>
+            <Icon name="close" size={12} />
+          </button>
+        ) : voice.installed ? (
+          <>
+            <span className={styles.installed} title="Instalada neste aparelho">
+              <Icon name="check" size={14} />
+            </span>
+            <ConfirmButton
+              confirmLabel="Remover?"
+              ariaLabel={`Remover ${name} do aparelho`}
+              onConfirm={() => onRemove(voice.id)}
+              disabled={disabled}
+            >
+              <Icon name="trash" size={15} />
+            </ConfirmButton>
+          </>
+        ) : (
+          <button
+            type="button"
+            className={styles.downloadPill}
+            onClick={() => onDownload(voice.id)}
+            disabled={disabled}
+            aria-label={`Baixar ${name} (${formatBytes(voice.sizeBytes)})`}
+          >
+            <Icon name="download" size={13} />
+            {formatBytes(voice.sizeBytes)}
+          </button>
+        )}
+      </div>
+    </li>
+  );
+});

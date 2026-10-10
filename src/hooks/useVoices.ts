@@ -24,13 +24,18 @@ export interface VoicesState {
   language: string;
   /** Vozes do idioma selecionado. */
   voices: VoiceInfo[];
+  /** Vozes instaladas no aparelho (todos os idiomas). */
+  installed: VoiceInfo[];
+  /** Soma dos tamanhos das vozes instaladas, em bytes. */
+  installedBytes: number;
   selected: VoiceInfo | null;
   downloads: DownloadMap;
   selectLanguage: (code: string) => void;
   selectVoice: (id: string) => void;
   download: (id: string) => Promise<void>;
   cancelDownload: (id: string) => void;
-  remove: (id: string) => Promise<void>;
+  /** Remove uma ou mais vozes do aparelho. */
+  remove: (ids: string | string[]) => Promise<void>;
   reload: () => void;
 }
 
@@ -86,6 +91,8 @@ export function useVoices(engine: TtsEngine | null): VoicesState {
   const languages = useMemo(() => buildLanguages(all), [all]);
   const voices = useMemo(() => all.filter((v) => v.language === language), [all, language]);
   const selected = useMemo(() => voices.find((v) => v.id === selectedId) ?? null, [voices, selectedId]);
+  const installed = useMemo(() => all.filter((v) => v.installed), [all]);
+  const installedBytes = useMemo(() => installed.reduce((n, v) => n + (v.sizeBytes ?? 0), 0), [installed]);
 
   const selectVoice = useCallback((id: string) => {
     setSelectedId(id);
@@ -146,17 +153,35 @@ export function useVoices(engine: TtsEngine | null): VoicesState {
     controllers.current.get(id)?.abort();
   }, []);
 
+  /**
+   * Remove vozes do aparelho (em sequência, para não disputar o armazenamento).
+   * Se a voz selecionada sair, a seleção passa para a melhor voz instalada que
+   * restou no mesmo idioma — evita ficar com uma voz que exige novo download.
+   */
   const remove = useCallback(
-    async (id: string) => {
+    async (ids: string | string[]) => {
       if (!engine) return;
+      const list = Array.isArray(ids) ? ids : [ids];
+      const removed = new Set<string>();
       try {
-        await engine.removeVoice(id);
-        patchVoice(id, { installed: false });
+        for (const id of list) {
+          await engine.removeVoice(id);
+          removed.add(id);
+          patchVoice(id, { installed: false });
+        }
       } catch (err) {
         setError(errorMessage(err));
       }
+
+      if (selectedId && removed.has(selectedId)) {
+        const remaining = all
+          .filter((v) => v.language === language)
+          .map((v) => (removed.has(v.id) ? { ...v, installed: false } : v));
+        const next = remaining.find((v) => v.installed && v.id !== selectedId);
+        if (next) selectVoice(next.id);
+      }
     },
-    [engine, patchVoice],
+    [engine, patchVoice, selectedId, all, language, selectVoice],
   );
 
   const reload = useCallback(() => {
@@ -171,6 +196,8 @@ export function useVoices(engine: TtsEngine | null): VoicesState {
     languages,
     language,
     voices,
+    installed,
+    installedBytes,
     selected,
     downloads,
     selectLanguage,

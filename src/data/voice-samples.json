@@ -1,0 +1,35 @@
+{
+  "pt_BR": {
+    "phrases": [
+      {
+        "text": "Vivemos exclusivamente no presente pois sempre e eternamente é o dia de hoje e o dia de amanhã será um hoje, a eternidade é o estado das coisas neste momento.",
+        "source": "A Hora da Estrela, 1977."
+      },
+      {
+        "text": "Deus, para a felicidade do homem, inventou a fé e o amor. O Diabo, invejoso, fez o homem confundir fé com religião e amor com casamento.",
+        "source": "Machado de Assis"
+      },
+      {
+        "text": "Não é amigo aquele que alardeia a amizade: é traficante; a amizade sente-se, não se diz...",
+        "source": "Machado de Assis"
+      },
+      {
+        "text": "Até cortar os próprios defeitos pode ser perigoso. Nunca se sabe qual é o defeito que sustenta nosso edifício inteiro.",
+        "source": "Clarice Lispector"
+      },
+      {
+        "text": "Tudo vale a pena quando a alma não é pequena.",
+        "source": "Fernando Pessoa"
+      }
+    ],
+    "voices": [
+      "pt_BR-cadu-medium",
+      "pt_BR-dii-medium",
+      "pt_BR-edresson-low",
+      "pt_BR-faber-medium",
+      "pt_BR-jeff-medium",
+      "pt_BR-miro-medium",
+      "pt_BR-razo-medium"
+    ]
+  }
+}

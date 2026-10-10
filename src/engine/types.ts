@@ -33,6 +33,8 @@ export interface VoiceInfo {
   attribution?: string;
   /** Página do modelo (cartão com licença e detalhes). */
   homepage?: string;
+  /** Amostra de áudio remota (preview sem baixar o modelo). */
+  sampleUrl?: string;
 }
 
 /** Progresso de geração: `done` de `total` trechos concluídos. */

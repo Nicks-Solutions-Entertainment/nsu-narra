@@ -9,6 +9,8 @@ import community from './community-voices.json';
 /** Base de download do repositório oficial de vozes. */
 export const OFFICIAL_BASE = 'https://huggingface.co/rhasspy/piper-voices/resolve/main';
 export const OFFICIAL_INDEX_URL = `${OFFICIAL_BASE}/voices.json`;
+/** Amostras publicadas pelo projeto Piper (MP3 ~100 KB, com CORS). */
+const OFFICIAL_SAMPLES = 'https://rhasspy.github.io/piper-samples/samples';
 
 /** Entrada do catálogo: metadados + onde baixar. `installed` vem do armazenamento. */
 export type CatalogEntry = Omit<VoiceInfo, 'installed'> & {
@@ -44,6 +46,7 @@ export function parseOfficialIndex(raw: Record<string, RawVoice> | RawVoice[]): 
       sizeBytes: v.files[modelPath]?.size_bytes,
       source: 'official',
       homepage: `https://huggingface.co/rhasspy/piper-voices/tree/main/${dirname(modelPath)}`,
+      sampleUrl: `${OFFICIAL_SAMPLES}/${dirname(modelPath)}/speaker_0.mp3`,
       modelUrl: `${OFFICIAL_BASE}/${modelPath}`,
       configUrl: `${OFFICIAL_BASE}/${modelPath}.json`,
     });

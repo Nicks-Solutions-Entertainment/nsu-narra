@@ -1,38 +1,45 @@
 import { type CSSProperties, memo } from 'react';
 import type { VoiceInfo } from '@/engine';
-import type { LanguageOption } from '@/hooks/useVoices';
-import { formatBytes, formatCount, voiceOptionLabel } from '@/lib/format';
+import type { DownloadMap, LanguageOption } from '@/hooks/useVoices';
+import { formatBytes, formatCount } from '@/lib/format';
 import { Icon } from '../Icon/Icon';
 import { Select } from '../Select/Select';
+import { VoicePicker, type VoicePickerPreview } from '../VoicePicker/VoicePicker';
 import styles from './VoiceControls.module.css';
 
 export interface VoiceControlsProps {
   languages: LanguageOption[];
   language: string;
   voices: VoiceInfo[];
+  installed: VoiceInfo[];
+  installedBytes: number;
   selected: VoiceInfo | null;
-  /** Percentual do download da voz selecionada; `undefined` se não está baixando. */
-  downloadPct?: number;
+  downloads: DownloadMap;
+  preview: VoicePickerPreview;
   loading: boolean;
   disabled: boolean;
   onLanguageChange: (code: string) => void;
   onVoiceChange: (id: string) => void;
   onDownload: (id: string) => void;
   onCancelDownload: (id: string) => void;
-  onRemove: (id: string) => void;
+  onRemove: (ids: string | string[]) => void;
 }
 
 /**
- * Barra de seleção do composer: idioma e voz lado a lado (como o seletor de
- * modelo do Ollama) e a ação da voz atual (baixar / progresso / remover).
+ * Barra de seleção do composer: idioma (enum nativo) e voz (painel com prévia
+ * e gerenciamento) lado a lado, como o seletor de modelo do Ollama. Se a voz
+ * escolhida não estiver instalada, mostra o atalho de download ao lado.
  * Memoizado: não re-renderiza enquanto o usuário digita.
  */
 export const VoiceControls = memo(function VoiceControls({
   languages,
   language,
   voices,
+  installed,
+  installedBytes,
   selected,
-  downloadPct,
+  downloads,
+  preview,
   loading,
   disabled,
   onLanguageChange,
@@ -45,8 +52,7 @@ export const VoiceControls = memo(function VoiceControls({
     return <span className={styles.loading}>Carregando vozes…</span>;
   }
 
-  const official = voices.filter((v) => v.source === 'official');
-  const community = voices.filter((v) => v.source === 'community');
+  const downloadPct = selected ? downloads[selected.id] : undefined;
 
   return (
     <div className={styles.controls}>
@@ -64,56 +70,44 @@ export const VoiceControls = memo(function VoiceControls({
         ))}
       </Select>
 
-      <Select
-        label="Voz"
-        value={selected?.id ?? ''}
-        onChange={onVoiceChange}
-        disabled={disabled || voices.length === 0}
-        className={styles.voice}
-      >
-        {!selected && <option value="">Escolha uma voz</option>}
-        <VoiceGroup label="Oficiais" voices={official} />
-        <VoiceGroup label="Comunidade" voices={community} />
-      </Select>
+      <VoicePicker
+        language={language}
+        voices={voices}
+        installed={installed}
+        installedBytes={installedBytes}
+        selected={selected}
+        downloads={downloads}
+        preview={preview}
+        disabled={disabled}
+        onSelect={onVoiceChange}
+        onDownload={onDownload}
+        onCancelDownload={onCancelDownload}
+        onRemove={onRemove}
+      />
 
-      {selected && (
-        <VoiceAction
+      {selected && (downloadPct !== undefined || !selected.installed) && (
+        <DownloadAction
           voice={selected}
           downloadPct={downloadPct}
           disabled={disabled}
           onDownload={onDownload}
           onCancelDownload={onCancelDownload}
-          onRemove={onRemove}
         />
       )}
     </div>
   );
 });
 
-function VoiceGroup({ label, voices }: { label: string; voices: VoiceInfo[] }) {
-  if (voices.length === 0) return null;
-  return (
-    <optgroup label={label}>
-      {voices.map((v) => (
-        <option key={v.id} value={v.id}>
-          {voiceOptionLabel(v)}
-        </option>
-      ))}
-    </optgroup>
-  );
-}
-
-interface VoiceActionProps {
+interface DownloadActionProps {
   voice: VoiceInfo;
   downloadPct?: number;
   disabled: boolean;
   onDownload: (id: string) => void;
   onCancelDownload: (id: string) => void;
-  onRemove: (id: string) => void;
 }
 
-/** Ação contextual da voz selecionada. */
-function VoiceAction({ voice, downloadPct, disabled, onDownload, onCancelDownload, onRemove }: VoiceActionProps) {
+/** Atalho de download (ou progresso) da voz selecionada. */
+function DownloadAction({ voice, downloadPct, disabled, onDownload, onCancelDownload }: DownloadActionProps) {
   if (downloadPct !== undefined) {
     return (
       <button
@@ -131,25 +125,10 @@ function VoiceAction({ voice, downloadPct, disabled, onDownload, onCancelDownloa
     );
   }
 
-  if (!voice.installed) {
-    return (
-      <button type="button" className={styles.downloadChip} onClick={() => onDownload(voice.id)} disabled={disabled}>
-        <Icon name="download" size={15} />
-        Baixar {formatBytes(voice.sizeBytes)}
-      </button>
-    );
-  }
-
   return (
-    <button
-      type="button"
-      className={styles.iconButton}
-      onClick={() => onRemove(voice.id)}
-      disabled={disabled}
-      title="Remover esta voz do aparelho"
-      aria-label="Remover esta voz do aparelho"
-    >
-      <Icon name="trash" size={16} />
+    <button type="button" className={styles.downloadChip} onClick={() => onDownload(voice.id)} disabled={disabled}>
+      <Icon name="download" size={15} />
+      Baixar {formatBytes(voice.sizeBytes)}
     </button>
   );
 }

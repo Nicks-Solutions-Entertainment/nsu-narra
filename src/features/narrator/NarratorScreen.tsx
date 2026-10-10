@@ -10,6 +10,7 @@ import { useDraft } from '@/hooks/useDraft';
 import { useEngine } from '@/hooks/useEngine';
 import { useNarrations } from '@/hooks/useNarrations';
 import { useBooleanPreference } from '@/hooks/usePreference';
+import { useVoicePreview } from '@/hooks/useVoicePreview';
 import { useVoices } from '@/hooks/useVoices';
 import { formatVoiceName } from '@/lib/format';
 import { languageLabel } from '@/lib/languages';
@@ -34,6 +35,7 @@ export function NarratorScreen() {
   const narrations = useNarrations(engine);
   const [text, setText] = useDraft();
   const [enterToSend, setEnterToSend] = useBooleanPreference(PREF_KEYS.enterToSend, true);
+  const preview = useVoicePreview(engine, narrations.running);
 
   const { selected, downloads } = voices;
   const downloadPct = selected ? downloads[selected.id] : undefined;
@@ -58,7 +60,7 @@ export function NarratorScreen() {
 
   const { download, remove } = voices;
   const handleDownload = useCallback((id: string) => void download(id), [download]);
-  const handleRemoveVoice = useCallback((id: string) => void remove(id), [remove]);
+  const handleRemoveVoice = useCallback((ids: string | string[]) => void remove(ids), [remove]);
 
   return (
     <div className={styles.shell}>
@@ -103,8 +105,11 @@ export function NarratorScreen() {
                 languages={voices.languages}
                 language={voices.language}
                 voices={voices.voices}
+                installed={voices.installed}
+                installedBytes={voices.installedBytes}
                 selected={selected}
-                downloadPct={downloadPct}
+                downloads={downloads}
+                preview={preview}
                 loading={voices.loading}
                 disabled={narrations.running}
                 onLanguageChange={voices.selectLanguage}

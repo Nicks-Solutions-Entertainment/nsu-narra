@@ -11,6 +11,8 @@ use crate::error::AppResult;
 
 const OFFICIAL_BASE: &str = "https://huggingface.co/rhasspy/piper-voices/resolve/main";
 const OFFICIAL_INDEX: &str = "https://huggingface.co/rhasspy/piper-voices/resolve/main/voices.json";
+/// Amostras publicadas pelo projeto Piper (preview sem baixar o modelo).
+const OFFICIAL_SAMPLES: &str = "https://rhasspy.github.io/piper-samples/samples";
 const COMMUNITY_JSON: &str = include_str!("../../../src/engine/catalog/community-voices.json");
 
 /// Voz do catálogo com as URLs de download.
@@ -27,6 +29,7 @@ pub struct CatalogVoice {
     pub commercial_use: Option<bool>,
     pub attribution: Option<String>,
     pub homepage: Option<String>,
+    pub sample_url: Option<String>,
     pub model_url: String,
     pub config_url: String,
 }
@@ -72,6 +75,7 @@ struct CommunityVoice {
     commercial_use: Option<bool>,
     attribution: Option<String>,
     homepage: Option<String>,
+    sample_url: Option<String>,
 }
 
 /// Baixa o índice oficial e devolve os bytes crus (para também salvar em cache).
@@ -124,6 +128,7 @@ fn parse_official(bytes: &[u8]) -> AppResult<Vec<CatalogVoice>> {
                 model_url: format!("{OFFICIAL_BASE}/{path}"),
                 config_url: format!("{OFFICIAL_BASE}/{path}.json"),
                 homepage: Some(format!("https://huggingface.co/rhasspy/piper-voices/tree/main/{dir}")),
+                sample_url: Some(format!("{OFFICIAL_SAMPLES}/{dir}/speaker_0.mp3")),
                 size_bytes: Some(file.size_bytes),
                 id: v.key,
                 language: v.language.code,
@@ -156,6 +161,7 @@ fn community() -> Vec<CatalogVoice> {
             commercial_use: v.commercial_use,
             attribution: v.attribution,
             homepage: v.homepage,
+            sample_url: v.sample_url,
             model_url: v.model_url,
             config_url: v.config_url,
         })
