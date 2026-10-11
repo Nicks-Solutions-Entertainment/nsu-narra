@@ -30,7 +30,7 @@ import urllib.request
 import wave
 from pathlib import Path
 
-from piper import PiperVoice
+from piper import PiperVoice, SynthesisConfig
 
 ROOT = Path(__file__).resolve().parents[2]
 OFFICIAL_BASE = "https://huggingface.co/rhasspy/piper-voices/resolve/main"
@@ -89,11 +89,16 @@ def fetch(url: str, dest: Path) -> None:
     part.replace(dest)
 
 
+# Ritmo da fala, igual a `SPEECH_PACE` em src/engine/wasm/speech-pace.ts.
+SPEECH_PACE = 1.2
+
+
 def synthesize_ogg(voice: PiperVoice, text: str, out: Path) -> None:
     """Sintetiza em WAV na memória e codifica para OGG Opus com o ffmpeg."""
     buf = io.BytesIO()
     with wave.open(buf, "wb") as wav:
-        voice.synthesize_wav(text, wav)
+        pace = SynthesisConfig(length_scale=voice.config.length_scale * SPEECH_PACE)
+        voice.synthesize_wav(text, wav, syn_config=pace)
 
     out.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(

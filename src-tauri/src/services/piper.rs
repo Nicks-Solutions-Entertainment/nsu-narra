@@ -14,6 +14,10 @@ use tokio::{io::AsyncWriteExt, process::Command};
 
 use crate::error::{AppError, AppResult};
 
+/// Ritmo da fala: alonga os fonemas (1.0 = padrão do modelo, rápido demais
+/// para narração). Manter igual a `SPEECH_PACE` em `src/engine/wasm/speech-pace.ts`.
+const LENGTH_SCALE: &str = "1.2";
+
 /// Caminho do executável: `PIPER_BIN` ou `piper` no PATH.
 fn piper_bin() -> OsString {
     std::env::var_os("PIPER_BIN").unwrap_or_else(|| "piper".into())
@@ -46,6 +50,8 @@ async fn run_piper(model: &Path, text: &str, out: &Path) -> AppResult<()> {
         .arg(model)
         .arg("-f")
         .arg(out)
+        .arg("--length_scale")
+        .arg(LENGTH_SCALE)
         .stdin(Stdio::piped())
         .stdout(Stdio::null())
         .stderr(Stdio::piped())

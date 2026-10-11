@@ -6,6 +6,7 @@ import { pcmToWav } from '../wav';
 import { ORT_BASE_URL } from './ort-paths';
 import { setNextVocabulary } from './phoneme-guard';
 import ort from './ort-runtime';
+import { SPEECH_PACE } from './speech-pace';
 
 /**
  * Motor Kokoro-82M (atrás de `FEATURES.kokoro`), executado dentro do worker.
@@ -62,7 +63,7 @@ export class KokoroEngine {
     const { waveform } = await this.session.run({
       input_ids: new ort.Tensor('int64', BigInt64Array.from(tokens, BigInt), [1, tokens.length]),
       style: new ort.Tensor('float32', styles.slice(row, row + STYLE_DIM), [1, STYLE_DIM]),
-      speed: new ort.Tensor('float32', [1], [1]),
+      speed: new ort.Tensor('float32', [1 / SPEECH_PACE], [1]),
     });
     return pcmToWav(waveform.data as Float32Array, KOKORO_MODEL.sampleRate);
   }
