@@ -5,17 +5,17 @@ Digite um texto, escolha uma voz e baixe o `.wav`. Tudo roda **no aparelho**: no
 ## Rodar
 
 ```bash
-npm install
-npm run dev          # http://localhost:3000
-npm run build        # export estático em out/
-npm run lint && npm run typecheck
+pnpm install
+pnpm dev              # http://localhost:3000
+pnpm build            # export estático em out/
+pnpm lint && pnpm typecheck
 ```
 
 Desktop (requer Rust, e o Piper com `pip install piper-tts` ou `PIPER_BIN` apontando para o executável):
 
 ```bash
-npm run tauri dev
-npm run tauri build
+pnpm tauri dev
+pnpm tauri build
 ```
 
 CLI de aprendizado (Fase 2):
@@ -81,7 +81,7 @@ Três vozes pt-BR do [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) (Do
 A flag é **temporária**: quando as vozes forem destiladas para Piper ([proposta](docs/proposta-narra-voice-lab.md)), desligue-a no build e o código do Kokoro sai do bundle:
 
 ```bash
-NEXT_PUBLIC_FEATURE_KOKORO=off npm run build
+NEXT_PUBLIC_FEATURE_KOKORO=off pnpm build
 ```
 
 Depois, remova `src/engine/wasm/kokoro.ts`, `src/engine/catalog/kokoro-*` e as amostras `public/samples/pt_BR/pt_BR-kokoro_*`.

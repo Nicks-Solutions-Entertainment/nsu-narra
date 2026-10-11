@@ -1,9 +1,10 @@
 {
   "name": "nsu-narra",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Narração de texto em PT-BR com vozes Piper, 100% local (PWA + desktop Tauri).",
   "license": "GPL-3.0-or-later",
+  "packageManager": "pnpm@11.8.0",
   "scripts": {
     "dev": "node scripts/copy-ort.mjs && next dev",
     "build": "node scripts/copy-ort.mjs && next build",
