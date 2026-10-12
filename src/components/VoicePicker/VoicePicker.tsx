@@ -244,8 +244,8 @@ function Panel({
 
           <div className={styles.scroll}>
             <ul ref={listRef} className={styles.list} role="radiogroup" aria-label="Vozes">
-              <Group label="Oficiais" voices={official} rowProps={rowProps} />
-              <Group label="Comunidade" voices={community} rowProps={rowProps} />
+              <Group label="Piper · repositório oficial" voices={official} rowProps={rowProps} />
+              <Group label="Piper · comunidade" voices={community} rowProps={rowProps} />
               <Group label="Kokoro · mais lentas" voices={kokoro} rowProps={rowProps} />
               <Group label="Supertonic 3 · experimentais" voices={supertonic} rowProps={rowProps} />
             </ul>

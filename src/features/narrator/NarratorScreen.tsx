@@ -3,6 +3,7 @@
 import { useCallback, useMemo } from 'react';
 import { DEFAULT_SPEED, DEFAULT_STEPS, DEFAULT_VARIATION, SPEED_RANGE, STEPS_RANGE, VARIATION_RANGE } from '@/engine';
 import { Alert } from '@/components/Alert/Alert';
+import { AppHeader } from '@/components/AppHeader/AppHeader';
 import { Composer } from '@/components/Composer/Composer';
 import { NarrationList } from '@/components/NarrationList/NarrationList';
 import { VoiceControls } from '@/components/VoiceControls/VoiceControls';
@@ -16,6 +17,7 @@ import { useVoices } from '@/hooks/useVoices';
 import { formatVoiceName } from '@/lib/format';
 import { languageLabel } from '@/lib/languages';
 import { PREF_KEYS } from '@/lib/storage';
+import { useTermsAccepted } from '@/lib/terms';
 import styles from './NarratorScreen.module.css';
 
 /** Limite de caracteres por geração (protege a memória em celulares). */
@@ -56,16 +58,20 @@ export function NarratorScreen() {
 
   const { selected, downloads } = voices;
   const downloadPct = selected ? downloads[selected.id] : undefined;
+  const termsAccepted = useTermsAccepted();
 
-  const blockedReason = !engine
-    ? 'Carregando o motor de voz…'
-    : !selected
-      ? 'Escolha uma voz.'
-      : downloadPct !== undefined
-        ? 'Aguarde o download da voz terminar.'
-        : !selected.installed
-          ? 'Baixe a voz selecionada para gerar o áudio.'
-          : null;
+  const blockedReason =
+    termsAccepted === false
+      ? 'Aceite os Termos de Uso para gerar áudio.'
+      : !engine
+        ? 'Carregando o motor de voz…'
+        : !selected
+          ? 'Escolha uma voz.'
+          : downloadPct !== undefined
+            ? 'Aguarde o download da voz terminar.'
+            : !selected.installed
+              ? 'Baixe a voz selecionada para gerar o áudio.'
+              : null;
 
   const { generate } = narrations;
   const handleSubmit = useCallback(() => {
@@ -85,10 +91,7 @@ export function NarratorScreen() {
 
   return (
     <div className={styles.shell}>
-      <header className={styles.header}>
-        <span className={styles.brand}>Narra</span>
-        {engine && <span className={styles.engine}>motor {engine.kind}</span>}
-      </header>
+      <AppHeader>{engine && <span className={styles.engine}>motor {engine.kind}</span>}</AppHeader>
 
       <main className={styles.scroll}>
         <div className={styles.column}>

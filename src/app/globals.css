@@ -59,9 +59,12 @@ body {
   padding: 0;
 }
 
+/*
+ * Sem altura fixa nem `overflow: hidden` aqui: cada página decide. A tela de
+ * narração trava a própria altura (`.shell`) e rola só o histórico; páginas
+ * de texto, como /terms, rolam normalmente.
+ */
 body {
-  height: 100dvh;
-  overflow: hidden; /* a rolagem acontece só no histórico */
   background: var(--bg);
   color: var(--text);
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;

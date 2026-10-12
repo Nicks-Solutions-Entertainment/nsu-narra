@@ -32,4 +32,6 @@ export const PREF_KEYS = {
   steps: 'narra:steps',
   speed: 'narra:speed',
   rhythmVariation: 'narra:rhythm-variation-amount',
+  /** Versão dos Termos de Uso aceita (ver `src/lib/terms.ts`). */
+  termsAccepted: 'narra:terms-accepted',
 } as const;

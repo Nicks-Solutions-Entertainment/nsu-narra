@@ -2,7 +2,7 @@
   "$comment": "Supertonic 3 (Supertone Inc., arquivado em 09/2026). Pesos sob OpenRAIL-M: uso comercial permitido com as restrições do Anexo A, que o app repassa aos usuários. Quatro modelos ONNX + config + indexador são compartilhados por todas as vozes; cada voz é um estilo JSON (style_ttl 1×50×256, style_dp 1×8×16). URLs fixadas na revisão 3cadd1e (18/05/2026); trocar baseUrl pelo espelho próprio quando existir.",
   "license": "OpenRAIL-M",
   "commercial": "yes",
-  "licenseNote": "Ao publicar o áudio, informe que ele foi gerado por IA (exigência da licença). Projeto arquivado pela Supertone em 09/2026.",
+  "licenseNote": "Ao publicar o áudio, informe que ele foi gerado por IA (exigência da licença).",
   "attribution": "Supertone Inc. (Supertonic 3)",
   "homepage": "https://huggingface.co/Supertone/supertonic-3",
   "licenseUrl": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/LICENSE",

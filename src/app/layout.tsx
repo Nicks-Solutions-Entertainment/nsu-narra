@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import { TermsDialog } from '@/components/TermsDialog/TermsDialog';
 import './globals.css';
 
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
@@ -28,7 +29,10 @@ export const viewport: Viewport = {
  */
 const COI_CONFIG = `window.coi={shouldRegister:function(){return !window.__TAURI_INTERNALS__}};`;
 
-/** Layout raiz: HTML base, metadados de PWA e service worker de isolamento. */
+/**
+ * Layout raiz: HTML base, metadados de PWA, service worker de isolamento e o
+ * aviso de Termos de Uso (aparece até o primeiro aceite).
+ */
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR">
@@ -37,7 +41,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {/* eslint-disable-next-line @next/next/no-sync-scripts -- precisa rodar antes de tudo para recarregar isolado */}
         <script src={`${basePath}/coi-serviceworker.js`} />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <TermsDialog />
+      </body>
     </html>
   );
 }
