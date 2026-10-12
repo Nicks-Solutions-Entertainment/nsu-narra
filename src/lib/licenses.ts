@@ -16,6 +16,7 @@ const SUMMARIES: [RegExp, string][] = [
   [/BY-SA/i, 'Uso livre, inclusive comercial, com crédito; derivados devem usar a mesma licença.'],
   [/BY-ND/i, 'Uso livre, inclusive comercial, com crédito e sem modificar o modelo.'],
   [/CC BY/i, 'Uso livre, inclusive comercial, desde que dê crédito ao autor.'],
+  [/OpenRAIL/i, 'Permite uso comercial, com restrições: proibido imitar pessoas sem consentimento, desinformar, dar aconselhamento médico ou violar a lei.'],
   [/^MIT$/i, 'Permissiva: uso livre, inclusive comercial; mantenha o aviso de licença.'],
   [/Apache/i, 'Permissiva: uso livre, inclusive comercial; mantenha o aviso de licença.'],
   [/AGPL|GPL/i, 'Permite uso comercial; quem distribui o modelo modificado deve abrir o código.'],

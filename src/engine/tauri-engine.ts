@@ -22,8 +22,8 @@ interface DownloadProgressEvent {
  * inicia um processo do Piper e carrega o modelo, então dividir em trechos
  * aqui multiplicaria esse custo; o Piper já processa frase a frase.
  *
- * Vozes que o Rust não roda (Kokoro, com `FEATURES.kokoro`) são delegadas a
- * um `TtsEngine` WASM opcional, executado dentro da própria janela.
+ * Vozes que o Rust não roda (Kokoro e Supertonic, conforme as flags) são
+ * delegadas a um `TtsEngine` WASM opcional, executado dentro da própria janela.
  */
 export class TauriEngine implements TtsEngine {
   readonly kind = 'tauri' as const;
@@ -37,7 +37,7 @@ export class TauriEngine implements TtsEngine {
   async listVoices(): Promise<VoiceInfo[]> {
     const [native, extra] = await Promise.all([
       invoke<VoiceInfo[]>('list_voices').catch((e) => Promise.reject(toError(e))),
-      this.wasm ? this.wasm.listVoices(['kokoro']) : Promise.resolve([]),
+      this.wasm ? this.wasm.listVoices(WASM_FAMILIES) : Promise.resolve([]),
     ]);
     const all = [...native.map((v) => ({ ...v, family: v.family ?? 'piper' })), ...extra];
     this.families = new Map(all.map((v) => [v.id, v.family]));
@@ -46,7 +46,8 @@ export class TauriEngine implements TtsEngine {
 
   /** Motor WASM se a voz for de uma família que o Rust não roda. */
   private delegate(id: string): TtsEngine | null {
-    return this.wasm && this.families.get(id) === 'kokoro' ? this.wasm : null;
+    const family = this.families.get(id);
+    return this.wasm && family && WASM_FAMILIES.includes(family) ? this.wasm : null;
   }
 
   async downloadVoice(id: string, options: DownloadOptions = {}): Promise<void> {
@@ -104,6 +105,9 @@ export class TauriEngine implements TtsEngine {
     this.wasm?.dispose?.();
   }
 }
+
+/** Famílias que só existem no motor WASM (o Rust roda apenas o Piper). */
+const WASM_FAMILIES: VoiceFamily[] = ['kokoro', 'supertonic'];
 
 /** Erros do Rust chegam como string serializada; normaliza para `Error`. */
 function toError(err: unknown): Error {

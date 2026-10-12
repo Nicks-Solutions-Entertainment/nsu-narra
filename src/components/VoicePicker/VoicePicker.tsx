@@ -149,6 +149,7 @@ function Panel({
   const official = filtered.filter((v) => v.family === 'piper' && v.source === 'official');
   const community = filtered.filter((v) => v.family === 'piper' && v.source === 'community');
   const kokoro = filtered.filter((v) => v.family === 'kokoro');
+  const supertonic = filtered.filter((v) => v.family === 'supertonic');
 
   // Foco inicial: busca (se houver) ou a voz selecionada.
   useEffect(() => {
@@ -246,6 +247,7 @@ function Panel({
               <Group label="Oficiais" voices={official} rowProps={rowProps} />
               <Group label="Comunidade" voices={community} rowProps={rowProps} />
               <Group label="Kokoro · mais lentas" voices={kokoro} rowProps={rowProps} />
+              <Group label="Supertonic 3 · experimentais" voices={supertonic} rowProps={rowProps} />
             </ul>
             {filtered.length === 0 && (
               <p className={styles.empty}>

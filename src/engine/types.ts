@@ -25,8 +25,10 @@ export type CommercialUse = 'yes' | 'no' | 'unclear';
  *  - `piper`: VITS, rápido; um modelo (~60 MB) por voz.
  *  - `kokoro`: Kokoro-82M, ~8× mais lento; um modelo compartilhado (~88 MB)
  *    + um vetor de estilo (~0,5 MB) por voz. Atrás da flag `FEATURES.kokoro`.
+ *  - `supertonic`: Supertonic 3 (flow matching); quatro modelos compartilhados
+ *    (~400 MB) + um estilo (~0,3 MB) por voz. Atrás de `FEATURES.supertonic`.
  */
-export type VoiceFamily = 'piper' | 'kokoro';
+export type VoiceFamily = 'piper' | 'kokoro' | 'supertonic';
 
 /** Metadados de uma voz exibidos no seletor. */
 export interface VoiceInfo {
@@ -70,6 +72,12 @@ export interface SynthesizeOptions {
   onProgress?: (progress: SynthesisProgress) => void;
   /** Cancela a geração entre trechos (cooperativo). */
   signal?: AbortSignal;
+  /** Passos de refinamento (qualidade × tempo). Só Supertonic; os outros ignoram. */
+  steps?: number;
+  /** Velocidade sobre o ritmo padrão do app (1 = normal). Base da variação de ritmo. */
+  speed?: number;
+  /** Variação máxima da velocidade entre trechos (ex.: 0,05 = ±5%); 0 = constante. */
+  variation?: number;
 }
 
 export interface DownloadOptions {

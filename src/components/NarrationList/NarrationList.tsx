@@ -7,6 +7,10 @@ import styles from './NarrationList.module.css';
 interface NarrationListProps {
   items: Narration[];
   onRemove: (id: string) => void;
+  onRegenerate: (id: string) => void;
+  onSelectVersion: (id: string, index: number) => void;
+  /** Uma geração em andamento bloqueia o "regerar" (uma por vez). */
+  running: boolean;
   onClear: () => void;
 }
 
@@ -14,7 +18,7 @@ interface NarrationListProps {
  * Histórico de narrações (área rolável acima do composer).
  * Rola até o fim quando um item novo é adicionado, como num chat.
  */
-export function NarrationList({ items, onRemove, onClear }: NarrationListProps) {
+export function NarrationList({ items, onRemove, onRegenerate, onSelectVersion, running, onClear }: NarrationListProps) {
   const endRef = useRef<HTMLDivElement>(null);
   const count = items.length;
 
@@ -45,7 +49,14 @@ export function NarrationList({ items, onRemove, onClear }: NarrationListProps) 
       </div>
       <ol className={styles.list} aria-label="Narrações geradas">
         {items.map((item) => (
-          <NarrationItem key={item.id} item={item} onRemove={onRemove} />
+          <NarrationItem
+            key={item.id}
+            item={item}
+            onRemove={onRemove}
+            onRegenerate={onRegenerate}
+            onSelectVersion={onSelectVersion}
+            canRegenerate={!running}
+          />
         ))}
       </ol>
       <div ref={endRef} />

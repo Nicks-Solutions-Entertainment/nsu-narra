@@ -14,4 +14,13 @@ export const FEATURES = {
    * o código em `src/engine/wasm/kokoro.ts` e `src/engine/catalog/kokoro-*`.
    */
   kokoro: process.env.NEXT_PUBLIC_FEATURE_KOKORO !== 'off',
+
+  /**
+   * Vozes Supertonic 3 (pesos OpenRAIL-M) rodando no navegador.
+   *
+   * Experimental: o projeto foi arquivado pela Supertone em 09/2026 (sem
+   * atualizações). Desligue com `NEXT_PUBLIC_FEATURE_SUPERTONIC=off`; o código
+   * fica em `src/engine/wasm/supertonic.ts` e `src/engine/catalog/supertonic-*`.
+   */
+  supertonic: process.env.NEXT_PUBLIC_FEATURE_SUPERTONIC !== 'off',
 } as const;

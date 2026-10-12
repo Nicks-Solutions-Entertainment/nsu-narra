@@ -43,7 +43,7 @@ export function formatVoiceName(name: string): string {
 }
 
 /** Nome de arquivo para download, com data/hora para não sobrescrever. */
-export function audioFileName(voiceId: string, date = new Date()): string {
+export function audioFileName(voiceId: string, date = new Date(), extension = 'wav'): string {
   const stamp = date.toISOString().slice(0, 19).replace(/[:T]/g, '-');
-  return `narracao-${voiceId}-${stamp}.wav`;
+  return `narracao-${voiceId}-${stamp}.${extension}`;
 }

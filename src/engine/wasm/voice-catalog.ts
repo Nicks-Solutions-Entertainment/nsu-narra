@@ -1,7 +1,14 @@
 import { voices as libStaticVoices } from '@mintplex-labs/piper-tts-web';
 import { FEATURES } from '@/config/features';
 import type { VoiceFamily } from '../types';
-import { type CatalogEntry, KOKORO_VOICES, mergeCatalog, OFFICIAL_INDEX_URL, parseOfficialIndex } from '../catalog';
+import {
+  type CatalogEntry,
+  KOKORO_VOICES,
+  mergeCatalog,
+  OFFICIAL_INDEX_URL,
+  parseOfficialIndex,
+  SUPERTONIC_VOICES,
+} from '../catalog';
 import { readCachedIndex, writeCachedIndex } from './voice-store';
 
 export type { CatalogEntry };
@@ -9,7 +16,10 @@ export type { CatalogEntry };
 let piperPromise: Promise<CatalogEntry[]> | null = null;
 
 /** Vozes extras disponíveis neste build (dependem das flags). */
-const EXTRA_VOICES: readonly CatalogEntry[] = FEATURES.kokoro ? KOKORO_VOICES : [];
+const EXTRA_VOICES: readonly CatalogEntry[] = [
+  ...(FEATURES.kokoro ? KOKORO_VOICES : []),
+  ...(FEATURES.supertonic ? SUPERTONIC_VOICES : []),
+];
 
 /**
  * Retorna o catálogo das famílias pedidas (padrão: todas).
@@ -20,7 +30,7 @@ const EXTRA_VOICES: readonly CatalogEntry[] = FEATURES.kokoro ? KOKORO_VOICES : 
  *  3. lista embutida na biblioteca WASM (mais antiga, último recurso).
  *
  * Desempenho: memoizado por sessão do worker; uma falha permite nova tentativa.
- * Pedir só `kokoro` (caso do desktop) não busca o índice Piper.
+ * Pedir só famílias não-Piper (caso do desktop) não busca o índice Piper.
  */
 export async function getCatalog(families?: readonly VoiceFamily[]): Promise<CatalogEntry[]> {
   const wantPiper = !families || families.includes('piper');

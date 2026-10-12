@@ -52,9 +52,10 @@ export class KokoroEngine {
   /**
    * Gera um trecho de texto com o estilo de uma voz.
    * @param styles Vetor da voz (`<id>.bin`, Float32 510×256).
+   * @param speed Multiplicador do ritmo do app (1 = normal).
    * @returns WAV PCM 16-bit mono a 24 kHz.
    */
-  async synthesize(text: string, styles: Float32Array, espeakVoice: string): Promise<ArrayBuffer> {
+  async synthesize(text: string, styles: Float32Array, espeakVoice: string, speed = 1): Promise<ArrayBuffer> {
     const ids = tokenize(await phonemize(text, espeakVoice));
     if (ids.length === 0) throw new Error('O texto não contém sons suportados por esta voz.');
 
@@ -63,7 +64,7 @@ export class KokoroEngine {
     const { waveform } = await this.session.run({
       input_ids: new ort.Tensor('int64', BigInt64Array.from(tokens, BigInt), [1, tokens.length]),
       style: new ort.Tensor('float32', styles.slice(row, row + STYLE_DIM), [1, STYLE_DIM]),
-      speed: new ort.Tensor('float32', [1 / SPEECH_PACE], [1]),
+      speed: new ort.Tensor('float32', [speed / SPEECH_PACE], [1]),
     });
     return pcmToWav(waveform.data as Float32Array, KOKORO_MODEL.sampleRate);
   }

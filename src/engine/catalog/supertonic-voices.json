@@ -1,0 +1,125 @@
+{
+  "$comment": "Supertonic 3 (Supertone Inc., arquivado em 09/2026). Pesos sob OpenRAIL-M: uso comercial permitido com as restrições do Anexo A, que o app repassa aos usuários. Quatro modelos ONNX + config + indexador são compartilhados por todas as vozes; cada voz é um estilo JSON (style_ttl 1×50×256, style_dp 1×8×16). URLs fixadas na revisão 3cadd1e (18/05/2026); trocar baseUrl pelo espelho próprio quando existir.",
+  "license": "OpenRAIL-M",
+  "commercial": "yes",
+  "licenseNote": "Ao publicar o áudio, informe que ele foi gerado por IA (exigência da licença). Projeto arquivado pela Supertone em 09/2026.",
+  "attribution": "Supertone Inc. (Supertonic 3)",
+  "homepage": "https://huggingface.co/Supertone/supertonic-3",
+  "licenseUrl": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323/LICENSE",
+  "baseUrl": "https://huggingface.co/Supertone/supertonic-3/resolve/3cadd1ee6394adea1bd021217a0e650ede09a323",
+  "lang": "pt",
+  "shared": [
+    {
+      "file": "supertonic3-tts.json",
+      "path": "onnx/tts.json",
+      "bytes": 8253
+    },
+    {
+      "file": "supertonic3-unicode_indexer.json",
+      "path": "onnx/unicode_indexer.json",
+      "bytes": 277676
+    },
+    {
+      "file": "supertonic3-duration_predictor.onnx",
+      "path": "onnx/duration_predictor.onnx",
+      "bytes": 3700147
+    },
+    {
+      "file": "supertonic3-text_encoder.onnx",
+      "path": "onnx/text_encoder.onnx",
+      "bytes": 36416150
+    },
+    {
+      "file": "supertonic3-vocoder.onnx",
+      "path": "onnx/vocoder.onnx",
+      "bytes": 101424195
+    },
+    {
+      "file": "supertonic3-vector_estimator.onnx",
+      "path": "onnx/vector_estimator.onnx",
+      "bytes": 256534781
+    }
+  ],
+  "voices": [
+    {
+      "id": "pt_BR-supertonic_f1",
+      "style": "F1",
+      "language": "pt_BR",
+      "name": "supertonic F1",
+      "gender": "female",
+      "bytes": 292046
+    },
+    {
+      "id": "pt_BR-supertonic_f2",
+      "style": "F2",
+      "language": "pt_BR",
+      "name": "supertonic F2",
+      "gender": "female",
+      "bytes": 292423
+    },
+    {
+      "id": "pt_BR-supertonic_f3",
+      "style": "F3",
+      "language": "pt_BR",
+      "name": "supertonic F3",
+      "gender": "female",
+      "bytes": 290794
+    },
+    {
+      "id": "pt_BR-supertonic_f4",
+      "style": "F4",
+      "language": "pt_BR",
+      "name": "supertonic F4",
+      "gender": "female",
+      "bytes": 291808
+    },
+    {
+      "id": "pt_BR-supertonic_f5",
+      "style": "F5",
+      "language": "pt_BR",
+      "name": "supertonic F5",
+      "gender": "female",
+      "bytes": 291479
+    },
+    {
+      "id": "pt_BR-supertonic_m1",
+      "style": "M1",
+      "language": "pt_BR",
+      "name": "supertonic M1",
+      "gender": "male",
+      "bytes": 291748
+    },
+    {
+      "id": "pt_BR-supertonic_m2",
+      "style": "M2",
+      "language": "pt_BR",
+      "name": "supertonic M2",
+      "gender": "male",
+      "bytes": 292055
+    },
+    {
+      "id": "pt_BR-supertonic_m3",
+      "style": "M3",
+      "language": "pt_BR",
+      "name": "supertonic M3",
+      "gender": "male",
+      "bytes": 290198
+    },
+    {
+      "id": "pt_BR-supertonic_m4",
+      "style": "M4",
+      "language": "pt_BR",
+      "name": "supertonic M4",
+      "gender": "male",
+      "bytes": 291522
+    },
+    {
+      "id": "pt_BR-supertonic_m5",
+      "style": "M5",
+      "language": "pt_BR",
+      "name": "supertonic M5",
+      "gender": "male",
+      "bytes": 291469
+    }
+  ]
+}

@@ -29,4 +29,7 @@ export const PREF_KEYS = {
   draft: 'narra:draft',
   enterToSend: 'narra:enter-to-send',
   commercialOnly: 'narra:commercial-only',
+  steps: 'narra:steps',
+  speed: 'narra:speed',
+  rhythmVariation: 'narra:rhythm-variation-amount',
 } as const;

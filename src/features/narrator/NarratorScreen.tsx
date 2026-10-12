@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
+import { DEFAULT_SPEED, DEFAULT_STEPS, DEFAULT_VARIATION, SPEED_RANGE, STEPS_RANGE, VARIATION_RANGE } from '@/engine';
 import { Alert } from '@/components/Alert/Alert';
 import { Composer } from '@/components/Composer/Composer';
 import { NarrationList } from '@/components/NarrationList/NarrationList';
@@ -9,7 +10,7 @@ import { VoiceNotice } from '@/components/VoiceControls/VoiceNotice';
 import { useDraft } from '@/hooks/useDraft';
 import { useEngine } from '@/hooks/useEngine';
 import { useNarrations } from '@/hooks/useNarrations';
-import { useBooleanPreference } from '@/hooks/usePreference';
+import { useBooleanPreference, useNumberPreference } from '@/hooks/usePreference';
 import { useVoicePreview } from '@/hooks/useVoicePreview';
 import { useVoices } from '@/hooks/useVoices';
 import { formatVoiceName } from '@/lib/format';
@@ -19,6 +20,7 @@ import styles from './NarratorScreen.module.css';
 
 /** Limite de caracteres por geração (protege a memória em celulares). */
 const MAX_TEXT_LENGTH = 20_000;
+
 
 /**
  * Tela principal (container), no formato de chat:
@@ -36,6 +38,20 @@ export function NarratorScreen() {
   const [text, setText] = useDraft();
   const [enterToSend, setEnterToSend] = useBooleanPreference(PREF_KEYS.enterToSend, true);
   const [commercialOnly, setCommercialOnly] = useBooleanPreference(PREF_KEYS.commercialOnly, false);
+  const [steps, setSteps] = useNumberPreference(PREF_KEYS.steps, DEFAULT_STEPS, STEPS_RANGE);
+  const [speed, setSpeed] = useNumberPreference(PREF_KEYS.speed, DEFAULT_SPEED, SPEED_RANGE);
+  const [variation, setVariation] = useNumberPreference(PREF_KEYS.rhythmVariation, DEFAULT_VARIATION, VARIATION_RANGE);
+  const settings = useMemo(
+    () => ({
+      speed,
+      steps,
+      variation,
+      onSpeedChange: setSpeed,
+      onStepsChange: setSteps,
+      onVariationChange: setVariation,
+    }),
+    [speed, steps, variation, setSpeed, setSteps, setVariation],
+  );
   const preview = useVoicePreview(engine, narrations.running);
 
   const { selected, downloads } = voices;
@@ -55,9 +71,13 @@ export function NarratorScreen() {
   const handleSubmit = useCallback(() => {
     const content = text.trim();
     if (!selected || !content) return;
-    generate(content, selected.id, `${formatVoiceName(selected.name)} · ${languageLabel(selected.language)}`);
+    generate(content, selected.id, `${formatVoiceName(selected.name)} · ${languageLabel(selected.language)}`, {
+      steps: selected.family === 'supertonic' ? steps : undefined,
+      speed,
+      variation,
+    });
     setText('');
-  }, [generate, selected, text, setText]);
+  }, [generate, selected, text, setText, steps, speed, variation]);
 
   const { download, remove } = voices;
   const handleDownload = useCallback((id: string) => void download(id), [download]);
@@ -72,7 +92,14 @@ export function NarratorScreen() {
 
       <main className={styles.scroll}>
         <div className={styles.column}>
-          <NarrationList items={narrations.items} onRemove={narrations.remove} onClear={narrations.clear} />
+          <NarrationList
+            items={narrations.items}
+            onRemove={narrations.remove}
+            onRegenerate={narrations.regenerate}
+            onSelectVersion={narrations.selectVersion}
+            running={narrations.running}
+            onClear={narrations.clear}
+          />
         </div>
       </main>
 
@@ -120,6 +147,7 @@ export function NarratorScreen() {
                 onDownload={handleDownload}
                 onCancelDownload={voices.cancelDownload}
                 onRemove={handleRemoveVoice}
+                settings={settings}
               />
             }
             footer={<VoiceNotice voice={selected} />}

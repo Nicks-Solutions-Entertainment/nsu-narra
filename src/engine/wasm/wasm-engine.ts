@@ -10,7 +10,8 @@ interface Pending {
 }
 
 /**
- * Motor do navegador/PWA: Piper em WASM (onnxruntime-web) dentro de um Web Worker.
+ * Motor do navegador/PWA: Piper, Kokoro e Supertonic em WASM (onnxruntime-web)
+ * dentro de um Web Worker.
  *
  * Esta classe roda no thread da UI e só faz RPC com o worker; nenhum trabalho
  * pesado acontece aqui.
@@ -28,7 +29,7 @@ export class WasmEngine implements TtsEngine {
 
   /**
    * Lista as vozes e quais já estão no OPFS.
-   * @param families Limita às famílias pedidas (o desktop só pede `kokoro`).
+   * @param families Limita às famílias pedidas (o desktop só pede as que o Rust não roda).
    */
   listVoices(families?: VoiceFamily[]): Promise<VoiceInfo[]> {
     return this.call('listVoices', { families });
@@ -48,8 +49,8 @@ export class WasmEngine implements TtsEngine {
   }
 
   /** Gera o WAV no worker, reportando "trecho X de Y". */
-  async synthesize(text: string, voiceId: string, { onProgress, signal }: SynthesizeOptions = {}): Promise<Blob> {
-    const bytes = await this.call('synthesize', { text, voiceId }, {
+  async synthesize(text: string, voiceId: string, { onProgress, signal, steps, speed, variation }: SynthesizeOptions = {}): Promise<Blob> {
+    const bytes = await this.call('synthesize', { text, voiceId, steps, speed, variation }, {
       signal,
       onProgress: onProgress && ((done, total) => onProgress({ done, total })),
     });

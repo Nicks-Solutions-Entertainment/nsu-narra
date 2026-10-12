@@ -9,11 +9,15 @@ import type { VoiceFamily, VoiceInfo } from '../types';
 
 /** Operações suportadas e o tipo de retorno de cada uma. */
 export interface WorkerOps {
-  /** `families`: limita às famílias pedidas (o desktop só pede `kokoro`). */
+  /** `families`: limita às famílias pedidas (o desktop só pede as que o Rust não roda). */
   listVoices: { params: { families?: VoiceFamily[] }; result: VoiceInfo[] };
   download: { params: { voiceId: string }; result: null };
   remove: { params: { voiceId: string }; result: null };
-  synthesize: { params: { text: string; voiceId: string }; result: ArrayBuffer };
+  /** `steps`/`speed`/`variation`: ajustes de voz (ver `SynthesizeOptions`). */
+  synthesize: {
+    params: { text: string; voiceId: string; steps?: number; speed?: number; variation?: number };
+    result: ArrayBuffer;
+  };
 }
 
 export type WorkerOp = keyof WorkerOps;

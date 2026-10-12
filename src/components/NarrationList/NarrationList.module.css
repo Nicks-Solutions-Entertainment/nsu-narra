@@ -71,9 +71,6 @@
 .item {
   display: grid;
   gap: 12px;
-  /* itens fora da tela não são renderizados até aparecerem (histórico longo) */
-  content-visibility: auto;
-  contain-intrinsic-size: auto 220px;
 }
 
 .userRow {
@@ -93,6 +90,11 @@
   /* textos longos ficam recolhidos; o usuário rola dentro da bolha */
   max-height: 260px;
   overflow-y: auto;
+  /* bolhas fora da tela não são renderizadas até aparecerem (histórico
+     longo). Fica aqui, e não no item, porque a contenção cortaria o menu de
+     download e o tooltip de configurações, que saem da caixa do item. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 80px;
 }
 
 .reply {
@@ -135,12 +137,11 @@
   font-size: 0.78rem;
 }
 
-.removeButton {
+.iconButton {
   display: inline-grid;
   place-items: center;
   width: 26px;
   height: 26px;
-  margin-left: auto;
   color: var(--text-muted);
   background: none;
   border: 0;
@@ -148,9 +149,99 @@
   cursor: pointer;
 }
 
-.removeButton:hover {
+.iconButton:hover:not(:disabled) {
   color: var(--text);
   background: var(--surface-2);
+}
+
+.iconButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Ações à direita do cabeçalho: versões, regerar e remover. */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.versions {
+  display: flex;
+  align-items: center;
+  margin-right: 4px;
+}
+
+.versionCount {
+  min-width: 3.2em;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+/* Ícone de configurações com os ajustes da versão no hover/foco. */
+.tuning {
+  position: relative;
+  display: inline-flex;
+}
+
+.tuningButton {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: var(--text-muted);
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  cursor: help;
+}
+
+.tuningButton:hover,
+.tuningButton:focus-visible {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.tooltip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  z-index: 10;
+  display: grid;
+  gap: 4px;
+  min-width: 200px;
+  padding: 8px 10px;
+  font-size: 0.78rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  transform: translateX(-50%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 120ms ease-out, visibility 120ms;
+}
+
+.tuning:hover .tooltip,
+.tuning:focus-within .tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tooltipRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.tooltipRow span {
+  color: var(--text-muted);
 }
 
 .running {
@@ -178,42 +269,13 @@
 .player {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.audio {
-  flex: 1 1 260px;
-  min-width: 0;
-  max-width: 480px;
-  height: 40px;
-}
 
-.downloadLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text);
-  text-decoration: none;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-}
-
-.downloadLink:hover {
-  background: var(--surface-2);
-}
-
-.size {
-  font-weight: 400;
-  color: var(--text-muted);
-}
-
-.removeButton:focus-visible,
-.clearButton:focus-visible,
-.downloadLink:focus-visible {
+.iconButton:focus-visible,
+.tuningButton:focus-visible,
+.clearButton:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }

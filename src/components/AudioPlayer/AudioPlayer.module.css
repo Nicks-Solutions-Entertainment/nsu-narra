@@ -1,0 +1,108 @@
+/* Pílula no mesmo visual dos seletores; altura igual à do botão de download. */
+.player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 260px;
+  min-width: 0;
+  max-width: 520px;
+  height: 46px;
+  padding: 0 14px 0 5px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.play {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  color: var(--accent-fg);
+  background: var(--accent);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.play:hover {
+  background: var(--accent-hover);
+}
+
+.wave {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  cursor: pointer;
+  touch-action: none; /* arrastar no celular não rola a página */
+  border-radius: 6px;
+}
+
+.play:focus-visible,
+.wave:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Barras arredondadas e centradas, como o ícone do app. */
+.bars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+}
+
+.bar {
+  flex: 1;
+  min-width: 1px;
+  max-width: 4px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.base {
+  color: var(--border-strong);
+}
+
+/* Prévia do destino no hover (como o SoundCloud): até o ponteiro. */
+.hover {
+  color: var(--accent);
+  opacity: 0;
+  clip-path: inset(0 calc((1 - var(--hover)) * 100%) 0 0);
+  transition: opacity 120ms;
+}
+
+@media (hover: hover) {
+  .wave:hover .hover {
+    opacity: 0.35;
+  }
+}
+
+/* Parte já tocada, recortada pela variável `--played` (0–1). */
+.played {
+  color: var(--accent);
+  clip-path: inset(0 calc((1 - var(--played)) * 100%) 0 0);
+}
+
+.time {
+  flex: none;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+@media (max-width: 420px) {
+  .time {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hover {
+    transition: none;
+  }
+}

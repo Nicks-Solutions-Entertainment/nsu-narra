@@ -2,10 +2,11 @@ import type { VoiceInfo } from '../types';
 import community from './community-voices.json';
 import kokoro from './kokoro-voices.json';
 import officialLicenses from './official-licenses.json';
+import supertonic from './supertonic-voices.json';
 
 /**
  * Catálogo de vozes (independente de motor): oficial (rhasspy) + comunidade,
- * e as vozes Kokoro quando a flag estiver ligada.
+ * e as vozes Kokoro e Supertonic quando as flags estiverem ligadas.
  * O desktop tem a parte Piper em `src-tauri/src/services/catalog.rs`.
  */
 
@@ -36,6 +37,8 @@ export type CatalogEntry = Omit<VoiceInfo, 'installed' | 'downloadBytes'> & {
   files: VoiceFile[];
   /** Voz do espeak-ng para os fonemas (vozes Kokoro). */
   espeakVoice?: string;
+  /** Código de idioma do modelo (vozes Supertonic, ex.: `pt`). */
+  modelLang?: string;
 };
 
 /** Formato do `voices.json` do Piper (só os campos usados). */
@@ -122,9 +125,48 @@ export const KOKORO_VOICES: readonly CatalogEntry[] = kokoro.voices.map((v) => (
   ],
 }));
 
+/** Arquivos compartilhados do Supertonic 3, na ordem em que são carregados. */
+export const SUPERTONIC_FILES = Object.fromEntries(
+  supertonic.shared.map((f) => [f.path.slice(f.path.lastIndexOf('/') + 1).replace(/\.\w+$/, ''), f.file]),
+) as Record<'tts' | 'unicode_indexer' | 'duration_predictor' | 'text_encoder' | 'vocoder' | 'vector_estimator', string>;
+
+const SUPERTONIC_SHARED: VoiceFile[] = supertonic.shared.map((f) => ({
+  name: f.file,
+  url: `${supertonic.baseUrl}/${f.path}`,
+  bytes: f.bytes,
+  shared: true,
+}));
+
+/**
+ * Vozes Supertonic 3: os quatro modelos (~380 MB) são compartilhados; cada
+ * voz só acrescenta seu estilo (~0,3 MB). O estilo vem por último na lista de
+ * arquivos, então a voz só aparece instalada depois do download completo.
+ */
+export const SUPERTONIC_VOICES: readonly CatalogEntry[] = supertonic.voices.map((v) => ({
+  id: v.id,
+  language: v.language,
+  name: v.name,
+  quality: 'high',
+  gender: v.gender as CatalogEntry['gender'],
+  sizeBytes: v.bytes,
+  sharedBytes: SUPERTONIC_SHARED.reduce((n, f) => n + (f.bytes ?? 0), 0),
+  family: 'supertonic' as const,
+  source: 'official' as const,
+  license: supertonic.license,
+  commercial: supertonic.commercial as CatalogEntry['commercial'],
+  licenseNote: supertonic.licenseNote,
+  attribution: supertonic.attribution,
+  homepage: supertonic.homepage,
+  modelLang: supertonic.lang,
+  files: [
+    ...SUPERTONIC_SHARED,
+    { name: `${v.id}.json`, url: `${supertonic.baseUrl}/voice_styles/${v.style}.json`, bytes: v.bytes },
+  ],
+}));
+
 /**
  * Junta oficial + comunidade (a oficial vence em caso de id repetido) +
- * extras (ex.: Kokoro) e ordena por idioma, nome e qualidade.
+ * extras (ex.: Kokoro, Supertonic) e ordena por idioma, nome e qualidade.
  */
 export function mergeCatalog(official: CatalogEntry[], extra: readonly CatalogEntry[] = []): CatalogEntry[] {
   const byId = new Map<string, CatalogEntry>();

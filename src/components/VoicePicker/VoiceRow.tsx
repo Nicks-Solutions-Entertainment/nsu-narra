@@ -1,10 +1,13 @@
 import { memo } from 'react';
-import type { VoiceInfo } from '@/engine';
+import type { VoiceFamily, VoiceInfo } from '@/engine';
 import { formatBytes, formatQuality, formatVoiceName } from '@/lib/format';
 import { ConfirmButton } from '../ConfirmButton/ConfirmButton';
 import { Icon } from '../Icon/Icon';
 import { LicenseBadge } from '../LicenseBadge/LicenseBadge';
 import styles from './VoicePicker.module.css';
+
+/** Nome do modelo compartilhado de cada família (para o aviso de download). */
+const FAMILY_LABEL: Record<VoiceFamily, string> = { piper: 'Piper', kokoro: 'Kokoro', supertonic: 'Supertonic' };
 
 export type PreviewStatus = 'idle' | 'loading' | 'playing';
 
@@ -83,11 +86,19 @@ export const VoiceRow = memo(function VoiceRow({
               Kokoro · mais lenta
             </span>
           )}
+          {voice.family === 'supertonic' && (
+            <span
+              className={styles.badgeSlow}
+              title="Supertonic 3: download grande (~380 MB, uma única vez) e projeto arquivado pela Supertone; qualidade e ritmo ajustáveis"
+            >
+              Supertonic · experimental
+            </span>
+          )}
         </span>
         <span className={styles.rowMeta}>
           <LicenseBadge license={voice.license} commercial={voice.commercial} licenseNote={voice.licenseNote} />
           <span className={styles.metaText}>
-            {voice.family === 'kokoro' ? '' : ` · qualidade ${formatQuality(voice.quality)}`}
+            {voice.family === 'piper' ? ` · qualidade ${formatQuality(voice.quality)}` : ''}
             {voice.attribution ? ` · ${voice.attribution}` : ''}
           </span>
         </span>
@@ -128,7 +139,7 @@ export const VoiceRow = memo(function VoiceRow({
             aria-label={`Baixar ${name} (${formatBytes(downloadSize(voice))})`}
             title={
               voice.sharedBytes && (voice.downloadBytes ?? 0) > (voice.sizeBytes ?? 0)
-                ? 'Inclui o modelo Kokoro, baixado uma única vez para todas as vozes Kokoro'
+                ? `Inclui o modelo ${FAMILY_LABEL[voice.family]}, baixado uma única vez para todas as vozes ${FAMILY_LABEL[voice.family]}`
                 : undefined
             }
           >

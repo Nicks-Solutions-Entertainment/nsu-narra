@@ -9,18 +9,23 @@ const WAV_HEADER_BYTES = 44;
  * Recebe `ArrayBuffer`s para evitar reler Blobs.
  *
  * @param parts WAVs completos (com cabeçalho de 44 bytes).
+ * @param gapSeconds Silêncio inserido entre trechos (o buffer já nasce zerado).
  * @returns Um ArrayBuffer WAV com o cabeçalho do primeiro trecho e tamanhos corrigidos.
  */
-export function concatWav(parts: ArrayBuffer[]): ArrayBuffer {
+export function concatWav(parts: ArrayBuffer[], gapSeconds = 0): ArrayBuffer {
   if (parts.length === 0) throw new Error('Nenhum áudio para juntar.');
   if (parts.length === 1) return parts[0];
 
-  const dataBytes = parts.reduce((n, p) => n + (p.byteLength - WAV_HEADER_BYTES), 0);
+  const sampleRate = new DataView(parts[0]).getUint32(24, true);
+  const gapBytes = Math.round(gapSeconds * sampleRate) * 2; // PCM 16-bit mono
+  const dataBytes =
+    parts.reduce((n, p) => n + (p.byteLength - WAV_HEADER_BYTES), 0) + gapBytes * (parts.length - 1);
   const out = new Uint8Array(WAV_HEADER_BYTES + dataBytes);
   out.set(new Uint8Array(parts[0], 0, WAV_HEADER_BYTES), 0);
 
   let offset = WAV_HEADER_BYTES;
-  for (const p of parts) {
+  for (const [i, p] of parts.entries()) {
+    if (i > 0) offset += gapBytes;
     out.set(new Uint8Array(p, WAV_HEADER_BYTES), offset);
     offset += p.byteLength - WAV_HEADER_BYTES;
   }

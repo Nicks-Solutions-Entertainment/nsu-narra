@@ -28,3 +28,31 @@ export function useBooleanPreference(key: string, defaultValue: boolean): [boole
 
   return [value, update];
 }
+
+/**
+ * Preferência numérica persistida no `localStorage` (ex.: velocidade da voz).
+ * Valores salvos fora de `[min, max]` são ignorados.
+ */
+export function useNumberPreference(
+  key: string,
+  defaultValue: number,
+  { min, max }: { min: number; max: number },
+): [number, (value: number) => void] {
+  const [value, setValue] = useState(defaultValue);
+
+  useEffect(() => {
+    const saved = Number(readPref(key) ?? NaN);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- leitura única do localStorage após hidratar
+    if (saved >= min && saved <= max) setValue(saved);
+  }, [key, min, max]);
+
+  const update = useCallback(
+    (next: number) => {
+      setValue(next);
+      writePref(key, String(next));
+    },
+    [key],
+  );
+
+  return [value, update];
+}

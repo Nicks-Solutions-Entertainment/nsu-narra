@@ -6,6 +6,7 @@ import { Icon } from '../Icon/Icon';
 import { Select } from '../Select/Select';
 import { VoicePicker, type VoicePickerPreview } from '../VoicePicker/VoicePicker';
 import { downloadSize } from '../VoicePicker/VoiceRow';
+import { VoiceSettings, type VoiceSettingsProps } from '../VoiceSettings/VoiceSettings';
 import styles from './VoiceControls.module.css';
 
 export interface VoiceControlsProps {
@@ -26,12 +27,15 @@ export interface VoiceControlsProps {
   onDownload: (id: string) => void;
   onCancelDownload: (id: string) => void;
   onRemove: (ids: string | string[]) => void;
+  /** Ajustes da voz (velocidade, variação de ritmo e passos do Supertonic). */
+  settings: Omit<VoiceSettingsProps, 'voice' | 'disabled'>;
 }
 
 /**
  * Barra de seleção do composer: idioma (enum nativo) e voz (painel com prévia
  * e gerenciamento) lado a lado, como o seletor de modelo do Ollama. Se a voz
  * escolhida não estiver instalada, mostra o atalho de download ao lado.
+ * O botão de configuração ao lado ajusta velocidade e, no Supertonic, passos.
  * Memoizado: não re-renderiza enquanto o usuário digita.
  */
 export const VoiceControls = memo(function VoiceControls({
@@ -52,6 +56,7 @@ export const VoiceControls = memo(function VoiceControls({
   onDownload,
   onCancelDownload,
   onRemove,
+  settings,
 }: VoiceControlsProps) {
   if (loading && languages.length === 0) {
     return <span className={styles.loading}>Carregando vozes…</span>;
@@ -91,6 +96,8 @@ export const VoiceControls = memo(function VoiceControls({
         onCancelDownload={onCancelDownload}
         onRemove={onRemove}
       />
+
+      <VoiceSettings {...settings} voice={selected} disabled={disabled} />
 
       {selected && (downloadPct !== undefined || !selected.installed) && (
         <DownloadAction

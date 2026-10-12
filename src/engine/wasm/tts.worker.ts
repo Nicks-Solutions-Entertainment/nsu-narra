@@ -5,9 +5,12 @@ import { splitSentences } from '../chunk';
 import { AbortError, type VoiceFamily } from '../types';
 import { concatWav } from '../wav';
 import { ORT_BASE_URL } from './ort-paths';
+import { chunkSpeeds } from '../tuning';
 import { setNextVocabulary } from './phoneme-guard';
+import { setPiperSpeed } from './speech-pace';
 import type { WorkerRequest, WorkerResponse } from './protocol';
 import type { KokoroEngine } from './kokoro';
+import type { SupertonicEngine, SupertonicStyle } from './supertonic';
 import { type CatalogEntry, findVoice, getCatalog } from './voice-catalog';
 import {
   downloadVoice,
@@ -54,6 +57,24 @@ let kokoro: Promise<KokoroEngine> | null = null;
 /** Vetores de estilo já lidos, por voz (~0,5 MB cada). */
 const kokoroStyles = new Map<string, Float32Array>();
 
+/** Motor Supertonic carregado (quatro modelos compartilhados por todas as vozes). */
+let supertonic: Promise<SupertonicEngine> | null = null;
+/** Estilos Supertonic já lidos, por voz (~0,3 MB de JSON cada). */
+const supertonicStyles = new Map<string, SupertonicStyle>();
+
+/** Ajustes de síntese repassados da UI (ver `SynthesizeOptions`). */
+interface Tuning {
+  steps?: number;
+  speed?: number;
+  variation?: number;
+}
+
+/** Gera um trecho (WAV) numa velocidade e diz quanto silêncio pôr entre os trechos. */
+interface ChunkGenerator {
+  generate: (text: string, speed: number) => Promise<ArrayBuffer>;
+  gapSeconds: number;
+}
+
 const post = (msg: WorkerResponse, transfer: Transferable[] = []) => self.postMessage(msg, transfer);
 
 /**
@@ -75,6 +96,7 @@ function getSession(voiceId: string): Promise<TtsSession> {
   if (session?.voiceId === voiceId) return session.ready;
 
   void releaseKokoro(); // um modelo por vez na memória
+  void releaseSupertonic();
   TtsSession._instance = null;
   const ready = readVoiceConfig<Parameters<typeof setNextVocabulary>[0]>(voiceId).then((config) => {
     // Sem a voz no OPFS a lib tentaria baixar de outro repositório e gravaria
@@ -100,9 +122,10 @@ function getKokoro(voice: CatalogEntry): Promise<KokoroEngine> {
   if (!FEATURES.kokoro) return Promise.reject(new Error('Vozes Kokoro desativadas neste build.'));
   if (kokoro) return kokoro;
 
-  // Um modelo por vez: descarta a sessão Piper antes de carregar o Kokoro.
+  // Um modelo por vez: descarta as outras famílias antes de carregar o Kokoro.
   session = null;
   TtsSession._instance = null;
+  void releaseSupertonic();
 
   const modelName = voice.files.find((f) => f.shared)?.name ?? '';
   const ready = Promise.all([loadKokoroModule(), readFile(modelName)]).then(([mod, model]) => {
@@ -138,6 +161,60 @@ async function getKokoroStyle(voice: CatalogEntry): Promise<Float32Array> {
   return styles;
 }
 
+/**
+ * Retorna o motor Supertonic, carregando os quatro modelos na 1ª vez.
+ * Como o Kokoro, só existe no bundle com a flag ligada.
+ */
+function getSupertonic(): Promise<SupertonicEngine> {
+  if (!FEATURES.supertonic) return Promise.reject(new Error('Vozes Supertonic desativadas neste build.'));
+  if (supertonic) return supertonic;
+
+  // ~400 MB: solta as outras famílias antes de carregar.
+  session = null;
+  TtsSession._instance = null;
+  void releaseKokoro();
+
+  const ready = loadSupertonicModule().then((mod) => mod.SupertonicEngine.load(readInstalled));
+  supertonic = ready;
+  ready.catch(() => {
+    if (supertonic === ready) supertonic = null;
+  });
+  return ready;
+}
+
+/** Import do motor Supertonic, avaliado no build (ver `loadKokoroModule`). */
+function loadSupertonicModule(): Promise<typeof import('./supertonic')> {
+  return process.env.NEXT_PUBLIC_FEATURE_SUPERTONIC !== 'off'
+    ? import('./supertonic')
+    : Promise.reject(new Error('Vozes Supertonic desativadas neste build.'));
+}
+
+/** Estilo da voz Supertonic (lido do OPFS uma vez). */
+async function getSupertonicStyle(voice: CatalogEntry): Promise<SupertonicStyle> {
+  const cached = supertonicStyles.get(voice.id);
+  if (cached) return cached;
+  const [mod, file] = await Promise.all([loadSupertonicModule(), readInstalled(voice.files.at(-1)?.name ?? '')]);
+  const style = mod.SupertonicEngine.parseStyle(await file.text());
+  supertonicStyles.set(voice.id, style);
+  return style;
+}
+
+/** Solta os modelos Supertonic da memória (WASM). */
+async function releaseSupertonic(): Promise<void> {
+  const current = supertonic;
+  supertonic = null;
+  supertonicStyles.clear();
+  const engine = await current?.catch(() => null);
+  await engine?.release();
+}
+
+/** Lê um arquivo salvo, exigindo que exista. */
+async function readInstalled(name: string): Promise<File> {
+  const file = await readFile(name);
+  if (!file) throw new Error('Esta voz não está instalada. Baixe-a antes de gerar.');
+  return file;
+}
+
 /** Solta o modelo Kokoro da memória (WASM). */
 async function releaseKokoro(): Promise<void> {
   const current = kokoro;
@@ -154,9 +231,10 @@ async function releaseKokoro(): Promise<void> {
 async function handleListVoices(families?: VoiceFamily[]) {
   const [catalog, files] = await Promise.all([getCatalog(families), listFiles()]);
   return catalog.map((entry) => {
-    const { files: voiceFiles, espeakVoice, ...voice } = entry;
+    const { files: voiceFiles, espeakVoice, modelLang, ...voice } = entry;
     void voiceFiles;
     void espeakVoice;
+    void modelLang;
     const installed = isInstalled(entry, files);
     return { ...voice, installed, downloadBytes: installed ? 0 : missingBytes(entry, files) };
   });
@@ -185,7 +263,7 @@ async function handleDownload(id: number, voiceId: string, signal: AbortSignal) 
 
 /**
  * Remove a voz do OPFS e descarta o que estiver carregado dela.
- * Arquivos compartilhados (modelo Kokoro) só saem quando nenhuma outra voz
+ * Arquivos compartilhados (modelos Kokoro e Supertonic) só saem quando nenhuma outra voz
  * instalada os usa.
  */
 async function handleRemove(voiceId: string) {
@@ -195,6 +273,7 @@ async function handleRemove(voiceId: string) {
     TtsSession._instance = null;
   }
   kokoroStyles.delete(voiceId);
+  supertonicStyles.delete(voiceId);
 
   const [catalog, files] = await Promise.all([getCatalog(), listFiles()]);
   const keep = new Set(
@@ -202,8 +281,10 @@ async function handleRemove(voiceId: string) {
       .filter((v) => v.id !== voiceId && isInstalled(v, files))
       .flatMap((v) => v.files.filter((f) => f.shared).map((f) => f.name)),
   );
-  if (voice.family === 'kokoro' && !voice.files.some((f) => f.shared && keep.has(f.name))) {
-    await releaseKokoro(); // o modelo vai sair do disco: solta da memória também
+  // O modelo compartilhado vai sair do disco: solta da memória também.
+  if (!voice.files.some((f) => f.shared && keep.has(f.name))) {
+    if (voice.family === 'kokoro') await releaseKokoro();
+    if (voice.family === 'supertonic') await releaseSupertonic();
   }
   await removeVoice(voice, keep);
   return null;
@@ -215,32 +296,46 @@ async function handleRemove(voiceId: string) {
  * - Cancelamento verificado entre trechos.
  * - O ArrayBuffer final é transferido (zero-copy) para o thread da UI.
  */
-async function handleSynthesize(id: number, text: string, voiceId: string, signal: AbortSignal) {
+async function handleSynthesize(id: number, text: string, voiceId: string, tuning: Tuning, signal: AbortSignal) {
   const chunks = splitSentences(text, MAX_CHUNK_LEN);
   if (chunks.length === 0) throw new Error('Digite algum texto para gerar o áudio.');
 
   const voice = await findVoice(voiceId);
-  const generate = await chunkGenerator(voice);
+  const { generate, gapSeconds } = await chunkGenerator(voice, tuning);
+  // Variação de ritmo entre trechos em torno da velocidade escolhida (média = base).
+  const speeds = chunkSpeeds(tuning.speed ?? 1, chunks.length, tuning.variation);
   const parts: ArrayBuffer[] = [];
   post({ id, kind: 'progress', done: 0, total: chunks.length });
 
   for (let i = 0; i < chunks.length; i++) {
     if (signal.aborted) throw new AbortError('Geração cancelada.');
-    parts.push(await generate(chunks[i]));
+    parts.push(await generate(chunks[i], speeds[i]));
     post({ id, kind: 'progress', done: i + 1, total: chunks.length });
   }
 
-  return concatWav(parts);
+  return concatWav(parts, gapSeconds);
 }
 
-/** Função que gera um trecho (WAV) com o motor da família da voz. */
-async function chunkGenerator(voice: CatalogEntry): Promise<(text: string) => Promise<ArrayBuffer>> {
+/** Gerador de trechos com o motor da família da voz. */
+async function chunkGenerator(voice: CatalogEntry, { steps }: Tuning): Promise<ChunkGenerator> {
+  if (voice.family === 'supertonic') {
+    const [engine, style, mod] = await Promise.all([getSupertonic(), getSupertonicStyle(voice), loadSupertonicModule()]);
+    const lang = voice.modelLang ?? 'pt';
+    return { generate: (text, speed) => engine.synthesize(text, style, lang, steps, speed), gapSeconds: mod.GAP_SECONDS };
+  }
   if (voice.family === 'kokoro') {
     const [engine, styles] = await Promise.all([getKokoro(voice), getKokoroStyle(voice)]);
-    return (text) => engine.synthesize(text, styles, voice.espeakVoice ?? 'pt-br');
+    const espeak = voice.espeakVoice ?? 'pt-br';
+    return { generate: (text, speed) => engine.synthesize(text, styles, espeak, speed), gapSeconds: 0 };
   }
   const tts = await getSession(voice.id);
-  return async (text) => (await tts.predict(text)).arrayBuffer();
+  return {
+    generate: async (text, speed) => {
+      setPiperSpeed(speed);
+      return (await tts.predict(text)).arrayBuffer();
+    },
+    gapSeconds: 0,
+  };
 }
 
 /** Roteia cada requisição para o handler correspondente. */
@@ -253,7 +348,7 @@ async function dispatch(req: Exclude<WorkerRequest, { op: 'cancel' }>, signal: A
     case 'remove':
       return handleRemove(req.params.voiceId);
     case 'synthesize':
-      return handleSynthesize(req.id, req.params.text, req.params.voiceId, signal);
+      return handleSynthesize(req.id, req.params.text, req.params.voiceId, req.params, signal);
   }
 }
 

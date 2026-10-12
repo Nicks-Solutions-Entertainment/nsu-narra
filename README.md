@@ -86,6 +86,38 @@ NEXT_PUBLIC_FEATURE_KOKORO=off pnpm build
 
 Depois, remova `src/engine/wasm/kokoro.ts`, `src/engine/catalog/kokoro-*` e as amostras `public/samples/pt_BR/pt_BR-kokoro_*`.
 
+### Configuração da voz
+
+O botão ao lado do seletor de voz abre os ajustes, salvos no navegador:
+
+- **Velocidade** (0,70×–1,30× sobre o `SPEECH_PACE`): vale para Piper, Kokoro e Supertonic no navegador. No desktop, o Piper nativo ainda ignora esse ajuste;
+- **Variação de ritmo** (0% a 10%, padrão ±3%; 0 desliga): cada trecho recebe uma variação aleatória de velocidade até esse limite, centrado para que a média do texto fique na velocidade escolhida (`chunkSpeeds` em `src/engine/tuning.ts`);
+- **Qualidade (passos)**: só aparece para vozes Supertonic.
+
+### Download do áudio
+
+O ícone ⤓ ao lado do player abre o menu de formatos, com o tamanho estimado de cada um. A conversão acontece no aparelho, só no clique; o player continua tocando o WAV original.
+
+| Formato | Como é gerado | Observação |
+|---|---|---|
+| **OGG** (recomendado) | Opus 64 kbps pelo codificador nativo do navegador (WebCodecs), reamostrado para 48 kHz, com empacotador OGG próprio | ~6–11× menor que o WAV. Fica desativado se o navegador não tiver WebCodecs com Opus |
+| **MP3** | LAME em JavaScript ([@breezystack/lamejs](https://www.npmjs.com/package/@breezystack/lamejs), LGPL-3.0), num worker | 64 kbps (16–24 kHz) ou 96 kbps (44,1 kHz). ~25–50 ms de silêncio no início, comum no formato |
+| **FLAC** | Codificador próprio (preditores fixos + Rice), num worker | Sem perda (bit a bit igual ao WAV), ~40% do tamanho |
+| **WAV** | O próprio áudio gerado | Original |
+
+O código fica em `src/lib/audio-export/`; cada codificador só é baixado quando o formato é escolhido. Os OGG levam o comentário `Áudio gerado por IA (Narra)` nos metadados.
+
+### Vozes Supertonic 3 (flag `FEATURES.supertonic`, experimental)
+
+Dez vozes (F1–F5, M1–M5) do [Supertonic 3](https://huggingface.co/Supertone/supertonic-3) em português (`pt`), rodando no navegador:
+
+- quatro modelos compartilhados (~380 MB), baixados uma única vez, mais ~0,3 MB por voz. Não há G2P: o texto vai direto ao modelo;
+- **qualidade em passos** (2–16, padrão 8) no botão de configuração da voz, além de 0,3 s de silêncio entre trechos;
+- pesos sob **OpenRAIL-M**: uso comercial permitido, com restrições de uso. É obrigatório avisar que o conteúdo foi gerado por IA, e é proibido se passar por alguém, desinformar ou dar aconselhamento médico. O aceite na tela está pendente: veja [update-plans/license-confirmation.md](update-plans/license-confirmation.md);
+- a Supertone arquivou o projeto em 09/2026. As URLs estão fixadas na revisão `3cadd1e` do Hugging Face; troque `baseUrl` em `src/engine/catalog/supertonic-voices.json` quando houver um espelho próprio.
+
+Para desligar: `NEXT_PUBLIC_FEATURE_SUPERTONIC=off pnpm build`. As prévias são geradas com `--families supertonic` no script de amostras (requer `pip install supertonic`).
+
 ### Licenças
 
 Cada voz tem `license` e `commercial` (`yes` | `no` | `unclear`). Para as oficiais, isso vem de [official-licenses.json](src/engine/catalog/official-licenses.json), gerado a partir dos `MODEL_CARD`s; uma voz ajustada ("finetuned") a partir de outra herda a restrição da base — por isso Faber, Cadu e Jeff (dataset CC0, base `lessac` só para pesquisa) aparecem como "uso comercial incerto". Para atualizar quando o catálogo oficial mudar:
@@ -123,4 +155,4 @@ python scripts/samples/generate_samples.py --cache <pasta-para-modelos> --lang p
 
 ## Licença
 
-GPL-3.0-or-later (o Piper e o espeak-ng são GPL-3.0). Cada voz tem a própria licença: confira antes de uso comercial.
+GPL-3.0-or-later ([LICENSE](LICENSE); o Piper e o espeak-ng são GPL-3.0). Cada voz tem a própria licença: confira antes de uso comercial. Os modelos Supertonic 3 seguem a OpenRAIL-M, cujas restrições de uso valem para quem gera o áudio.
